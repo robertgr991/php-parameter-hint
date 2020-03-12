@@ -1,5 +1,7 @@
 # PHP Parameter Hint for Visual Studio Code
 
+[![VS Marketplace Version](https://vsmarketplacebadge.apphb.com/version-short/robertgr991.php-parameter-hint.svg)](https://marketplace.visualstudio.com/items?itemName=robertgr991.php-parameter-hint)
+
 ![php-parameter-hint screenshot](php-parameter-hint.png)
 
 Inserts parameter hints into function calls to easily understand the parameter role.

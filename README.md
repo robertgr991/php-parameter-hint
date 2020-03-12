@@ -1,6 +1,6 @@
 # PHP Parameter Hint for Visual Studio Code
 
-![vscode screenshot](php-parameter-hint.PNG)
+![vscode screenshot](php-parameter-hint.png)
 
 Inserts parameter hints into function calls to easily understand the parameter role.
 

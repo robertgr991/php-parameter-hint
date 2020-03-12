@@ -1,4 +1,3 @@
-/* eslint-disable */
 const engine = require('php-parser');
 
 class Parser {

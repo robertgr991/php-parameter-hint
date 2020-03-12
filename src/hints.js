@@ -1,4 +1,3 @@
-/* eslint-disable import/no-unresolved */
 const { ThemeColor, workspace, Range } = require('vscode');
 
 class Hints {

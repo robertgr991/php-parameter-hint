@@ -1,4 +1,3 @@
-/* eslint-disable */
 const vscode = require('vscode');
 const Commands = require('./commands');
 const Parser = require('./parser');

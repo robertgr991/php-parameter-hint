@@ -1,0 +1,159 @@
+{
+  "name": "php-parameter-hint",
+  "displayName": "PHP Parameter Hint",
+  "description": "PHP parameter hint for VS Code",
+  "version": "0.0.1",
+  "publisher": "robertgr991",
+  "engines": {
+    "vscode": "^1.35.1"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robertgr991/php-parameter-hint"
+  },
+  "homepage": "https://github.com/robertgr991/php-parameter-hint",
+  "bugs": {
+    "url": "https://github.com/robertgr991/php-parameter-hint/issues"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:php"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "phpParameterHint.toggle",
+        "title": "PHP Parameter Hint: Hide / Show Hints"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "PHP Parameter Hint",
+        "properties": {
+          "phpParameterHint.enabled": {
+            "type": "boolean",
+            "description": "Enable PHP Parameter Hint",
+            "default": true
+          },
+          "phpParameterHint.onSave": {
+            "type": "boolean",
+            "description": "Create parameter hints on document save",
+            "default": true
+          },
+          "phpParameterHint.saveDelay": {
+            "type": "integer",
+            "description": "Delay in ms for on document save run",
+            "default": 500
+          },
+          "phpParameterHint.onChange": {
+            "type": "boolean",
+            "description": "Create parameter hints on document change",
+            "default": false
+          },
+          "phpParameterHint.changeDelay": {
+            "type": "integer",
+            "description": "Delay in ms for on document change run",
+            "default": 100
+          },
+          "phpParameterHint.textEditorChangeDelay": {
+            "type": "integer",
+            "description": "Delay in ms for on active text editor change",
+            "default": 750
+          },
+          "phpParameterHint.php7": {
+            "type": "boolean",
+            "description": "True if php version is 7.0+, false otherwise",
+            "default": true
+          },
+          "phpParameterHint.fontWeight": {
+            "type": "string",
+            "default": "400",
+            "enum": [
+              "100",
+              "200",
+              "300",
+              "400",
+              "500",
+              "600",
+              "700",
+              "800",
+              "900"
+            ],
+            "description": "Hints styling of font-weight CSS property"
+          },
+          "phpParameterHint.fontStyle": {
+            "type": "string",
+            "default": "italic",
+            "enum": [
+              "normal",
+              "italic"
+            ],
+            "description": "Hints styling of font-style CSS property"
+          },
+          "phpParameterHint.margin": {
+            "type": "number",
+            "default": 2,
+            "description": "Hints styling of margin CSS property"
+          },
+          "phpParameterHint.fontSize": {
+            "type": "number",
+            "default": 12,
+            "description": "Hints styling of font size CSS property"
+          }
+        }
+      }
+    ],
+    "colors": [
+      {
+        "id": "phpParameterHint.hintForeground",
+        "description": "Specifies the foreground color for the annotations",
+        "defaults": {
+          "dark": "#FFFFFF",
+          "light": "#1a0000",
+          "highContrast": "#FFFFFF"
+        }
+      },
+      {
+        "id": "phpParameterHint.hintBackground",
+        "description": "Specifies the background color for the annotations",
+        "defaults": {
+          "dark": "#42475A",
+          "light": "#FFFFFF",
+          "highContrast": "#42475A"
+        }
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "phpParameterHint.toggle",
+        "key": "ctrl+k h",
+        "mac": "cmd+k h"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.1.1",
+    "@types/mocha": "^7.0.1",
+    "@types/node": "^12.11.7",
+    "@types/vscode": "^1.42.0",
+    "eslint": "^6.8.0",
+    "glob": "^7.1.6",
+    "mocha": "^7.0.1",
+    "typescript": "^3.7.5",
+    "vscode-test": "^1.3.0"
+  },
+  "dependencies": {
+    "php-parser": "^3.0.0-prerelease.9"
+  },
+  "extensionDependencies": [
+    "bmewburn.vscode-intelephense-client"
+  ]
+}

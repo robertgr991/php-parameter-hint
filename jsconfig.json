@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2018",
+    "checkJs": true /* Typecheck .js files. */,
+    "lib": ["es6"]
+  },
+  "exclude": ["node_modules"]
+}

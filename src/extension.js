@@ -33,7 +33,7 @@ function getParamName(editor, position, key) {
 
     if (hoverCommand && hoverCommand.length > 0) {
       try {
-        const regEx = /(?<=@param.+)((\.\.\.)?\$[a-zA-Z0-9_]+)/g;
+        const regEx = /(?<=@param.+)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/g;
         args = hoverCommand[0].contents[0].value.match(regEx);
       } catch (err) {
         printError(err);
@@ -118,7 +118,11 @@ function activate(context) {
 
       if (args) {
         args = args.trim();
-        const hint = args.replace('$', ' ').replace('... ', ' ...') + ': ';
+        const hint =
+          args
+            .replace('$', ' ')
+            .replace('... ', ' ...')
+            .replace('& ', ' &') + ': ';
         const decorationPHP = Hints.paramHint(hint, new vscode.Range(start, end));
 
         phpFunctions.push(decorationPHP);

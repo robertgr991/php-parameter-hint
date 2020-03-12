@@ -70,7 +70,7 @@ class Parser {
         obj.value && this.parseObject(obj.value);
       }
 
-      if (['return'].includes(obj.kind)) {
+      if (['return', 'silent'].includes(obj.kind)) {
         obj.expr && this.parseObject(obj.expr);
       }
 
@@ -96,6 +96,10 @@ class Parser {
         obj.right && this.parseObject(obj.right);
       }
 
+      if (['eval'].includes(obj.kind)) {
+        obj.source && this.parseObject(obj.source);
+      }
+
       if (['isset', 'unset'].includes(obj.kind)) {
         obj.variables && this.parseObject(obj.variables);
       }
@@ -103,6 +107,10 @@ class Parser {
       if (['bin'].includes(obj.kind)) {
         obj.left && this.parseObject(obj.left);
         obj.right && this.parseObject(obj.right);
+      }
+
+      if (['break', 'continue'].includes(obj.kind)) {
+        obj.level && this.parseObject(obj.level);
       }
 
       if (['switch', 'if', 'while', 'case', 'do'].includes(obj.kind)) {
@@ -189,6 +197,7 @@ class Parser {
         } else {
           obj.status && obj.status.left && this.parseObject(obj.status.left);
           obj.status && obj.status.right && this.parseObject(obj.status.right);
+          obj.status && this.parseObject(obj.status);
         }
       }
     }

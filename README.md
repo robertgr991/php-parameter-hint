@@ -6,7 +6,7 @@ Inserts parameter hints into function calls to easily understand the parameter r
 
 ## Settings
 
-There currently is a few configurable settings in the extension
+There are currently a few configurable settings in the extension.
 
 | Name                                     | Description                                  | Default  |
 | ---------------------------------------- | -------------------------------------------- | -------- |

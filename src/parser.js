@@ -121,6 +121,10 @@ class Parser {
         obj.alternate && this.parseObject(obj.alternate);
       }
 
+      if (['encapsed'].includes(obj.kind)) {
+        obj.value && this.parseObject(obj.value);
+      }
+
       if (['retif'].includes(obj.kind)) {
         obj.test && this.parseObject(obj.test);
         obj.trueExpr && this.parseObject(obj.trueExpr);
@@ -148,7 +152,7 @@ class Parser {
         obj.expressions && this.parseObject(obj.expressions);
       }
 
-      if (['empty', 'print'].includes(obj.kind)) {
+      if (['empty', 'print', 'encapsedpart'].includes(obj.kind)) {
         obj.expression && this.parseObject(obj.expression);
       }
 
@@ -210,6 +214,12 @@ class Parser {
       const startLoc = arg.loc.start;
       const endLoc = arg.loc.end;
       const expressionLoc = obj.what.offset ? obj.what.offset.loc.start : obj.what.loc.end;
+      let argKind = arg.kind || '';
+
+      if (arg.kind && arg.kind === 'identifier' && arg.name.name && arg.name.name === 'null') {
+        argKind = 'null';
+      }
+
       const phpArgument = {
         expression: {
           line: parseInt(expressionLoc.line, 10) - 1,
@@ -223,7 +233,9 @@ class Parser {
         end: {
           line: parseInt(endLoc.line, 10) - 1,
           character: parseInt(endLoc.column, 10)
-        }
+        },
+        name: arg.name || '',
+        kind: argKind
       };
 
       this.phpArguments.push(phpArgument);

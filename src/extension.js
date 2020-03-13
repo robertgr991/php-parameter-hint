@@ -5,6 +5,8 @@ const Hints = require('./hints');
 
 const hintDecorationType = vscode.window.createTextEditorDecorationType({});
 const channel = vscode.window.createOutputChannel('PHP Parameter Hint');
+const sameNameSign = '%';
+const literals = ['boolean', 'number', 'string', 'magic', 'nowdoc', 'array', 'null', 'encapsed'];
 
 /**
  * Print an error
@@ -20,26 +22,56 @@ function printError(err) {
  * @param {vscode.TextEditor} editor
  * @param {vscode.Position} position
  * @param {number} key integer
+ * @param {string} argumentName
  */
-function getParamName(editor, position, key) {
+function getParamName(editor, position, key, argumentName) {
   return new Promise(async (resolve, reject) => {
-    var args = [];
-    var hoverCommand = await vscode.commands.executeCommand(
+    let args = [];
+    const hoverCommand = await vscode.commands.executeCommand(
       'vscode.executeHoverProvider',
       editor.document.uri,
       position
     );
 
-    if (hoverCommand && hoverCommand.length > 0) {
+    if (hoverCommand && hoverCommand.length) {
       try {
-        const regEx = /(?<=@param.+)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/g;
-        args = hoverCommand[0].contents[0].value.match(regEx);
+        const regEx = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
+        let isFound = false;
+
+        for (let hover of hoverCommand) {
+          if (isFound) {
+            break;
+          }
+
+          for (let content of hover.contents) {
+            if (isFound) {
+              break;
+            }
+
+            args = content.value.match(regEx);
+
+            if (args) {
+              isFound = true;
+            }
+          }
+        }
+
+        if (args && args.length) {
+          if (
+            vscode.workspace.getConfiguration('phpParameterHint').get('collapseHintsWhenEqual') &&
+            args[key] &&
+            argumentName &&
+            args[key].substring(args[key].indexOf('$') + 1) === argumentName
+          ) {
+            args[key] = args[key].substring(0, args[key].indexOf('$')) + sameNameSign;
+          }
+        }
       } catch (err) {
         printError(err);
       }
     }
 
-    if (args) {
+    if (args && args.length) {
       resolve(args[key]);
     }
 
@@ -96,6 +128,20 @@ function activate(context) {
       return;
     }
 
+    if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLiterals')) {
+      phpArguments = phpArguments.filter(argument => {
+        return literals.includes(argument.kind);
+      });
+    }
+
+    if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')) {
+      if (activeEditor.selection && activeEditor.selection.isEmpty) {
+        phpArguments = phpArguments.filter(argument => {
+          return argument.start.line === activeEditor.selection.start.line;
+        });
+      }
+    }
+
     const phpFunctions = [];
 
     for (let index = 0; index < phpArguments.length; index++) {
@@ -109,7 +155,8 @@ function activate(context) {
         args = await getParamName(
           activeEditor,
           new vscode.Position(argument.expression.line, argument.expression.character),
-          argument.key
+          argument.key,
+          argument.name
         );
       } catch (err) {
         printError(err);
@@ -117,11 +164,25 @@ function activate(context) {
 
       if (args) {
         args = args.trim();
-        const hint =
-          args
-            .replace('$', ' ')
-            .replace('... ', ' ...')
-            .replace('& ', ' &') + ': ';
+        let hint = '';
+
+        if (
+          vscode.workspace.getConfiguration('phpParameterHint').get('collapseHintsWhenEqual') &&
+          args.indexOf('$') === -1
+        ) {
+          if (args === sameNameSign) {
+            continue;
+          } else {
+            hint = ` ${args.replace(sameNameSign, '')} `;
+          }
+        } else {
+          hint =
+            args
+              .replace('$', ' ')
+              .replace('... ', ' ...')
+              .replace('& ', ' &') + ': ';
+        }
+
         const decorationPHP = Hints.paramHint(hint, new vscode.Range(start, end));
 
         phpFunctions.push(decorationPHP);
@@ -240,6 +301,19 @@ function activate(context) {
         triggerUpdateDecorations(
           vscode.workspace.getConfiguration('phpParameterHint').get('textEditorChangeDelay')
         );
+      }
+    },
+    null,
+    context.subscriptions
+  );
+
+  vscode.window.onDidChangeTextEditorSelection(
+    event => {
+      if (
+        activeEditor &&
+        vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')
+      ) {
+        triggerUpdateDecorations(0);
       }
     },
     null,

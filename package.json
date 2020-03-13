@@ -2,7 +2,7 @@
   "name": "php-parameter-hint",
   "displayName": "PHP Parameter Hint",
   "description": "PHP parameter hint for VS Code",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "robertgr991",
   "engines": {
     "vscode": "^1.35.1"
@@ -28,6 +28,18 @@
       {
         "command": "phpParameterHint.toggle",
         "title": "PHP Parameter Hint: Hide / Show Hints"
+      },
+      {
+        "command": "phpParameterHint.toggleLiterals",
+        "title": "PHP Parameter Hint: Hide / Show Hints only for literals"
+      },
+      {
+        "command": "phpParameterHint.toggleLine",
+        "title": "PHP Parameter Hint: Hide / Show Hints only for current line"
+      },
+      {
+        "command": "phpParameterHint.toggleCollapse",
+        "title": "PHP Parameter Hint: Hide / Show Hints when variable name matches parameter name"
       }
     ],
     "configuration": [
@@ -63,6 +75,21 @@
             "type": "integer",
             "description": "Delay in ms for on active text editor change",
             "default": 750
+          },
+          "phpParameterHint.collapseHintsWhenEqual": {
+            "type": "boolean",
+            "description": "Collapse hint when variable name is the same as parameter name, keep the hint if the argument is passed by reference or if the splat operator is used",
+            "default": false
+          },
+          "phpParameterHint.hintOnlyLiterals": {
+            "type": "boolean",
+            "description": "Show hints only for literals",
+            "default": false
+          },
+          "phpParameterHint.hintOnlyLine": {
+            "type": "boolean",
+            "description": "Show hints only for current line",
+            "default": false
           },
           "phpParameterHint.php7": {
             "type": "boolean",
@@ -132,6 +159,21 @@
         "command": "phpParameterHint.toggle",
         "key": "ctrl+k h",
         "mac": "cmd+k h"
+      },
+      {
+        "command": "phpParameterHint.toggleLiterals",
+        "key": "ctrl+k l",
+        "mac": "cmd+k l"
+      },
+      {
+        "command": "phpParameterHint.toggleLine",
+        "key": "ctrl+k i",
+        "mac": "cmd+k i"
+      },
+      {
+        "command": "phpParameterHint.toggleCollapse",
+        "key": "ctrl+k c",
+        "mac": "cmd+k c"
       }
     ]
   },

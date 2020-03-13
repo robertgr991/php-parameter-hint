@@ -2,7 +2,7 @@
   "name": "php-parameter-hint",
   "displayName": "PHP Parameter Hint",
   "description": "PHP parameter hint for VS Code",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "robertgr991",
   "engines": {
     "vscode": "^1.35.1"
@@ -190,7 +190,8 @@
     "glob": "^7.1.6",
     "mocha": "^7.0.1",
     "typescript": "^3.7.5",
-    "vscode-test": "^1.3.0"
+    "vscode-test": "^1.3.0",
+    "minimist": ">=1.2.2"
   },
   "dependencies": {
     "php-parser": "^3.0.0-prerelease.9"

@@ -9,6 +9,7 @@ const sameNameSign = '%';
 const literals = ['boolean', 'number', 'string', 'magic', 'nowdoc', 'array', 'null', 'encapsed'];
 const slowAfter = 150;
 const showOnceEvery = 20;
+let updateFuncId;
 
 /**
  * Print an error
@@ -92,7 +93,7 @@ function activate(context) {
   /**
    * Get the PHP code then parse it and create parameter hints
    */
-  async function updateDecorations() {
+  async function updateDecorations(funcId) {
     if (!activeEditor || !activeEditor.document || activeEditor.document.languageId !== 'php') {
       return;
     }
@@ -234,6 +235,10 @@ function activate(context) {
         const decorationPHP = Hints.paramHint(hint, new vscode.Range(start, end));
         phpFunctions.push(decorationPHP);
 
+        if (funcId !== updateFuncId) {
+          break;
+        }
+
         if (phpArgumentsLen > slowAfter) {
           if (index % showOnceEvery === 0) {
             activeEditor.setDecorations(hintDecorationType, phpFunctions);
@@ -242,7 +247,9 @@ function activate(context) {
       }
     }
 
-    activeEditor.setDecorations(hintDecorationType, phpFunctions);
+    if (funcId === updateFuncId) {
+      activeEditor.setDecorations(hintDecorationType, phpFunctions);
+    }
   }
 
   /**
@@ -309,7 +316,9 @@ function activate(context) {
       timeout = undefined;
     }
 
-    timeout = setTimeout(updateDecorations, delay);
+    updateFuncId = new Date().getTime();
+
+    timeout = setTimeout(() => updateDecorations(updateFuncId), delay);
   }
 
   /**
@@ -359,7 +368,7 @@ function activate(context) {
   );
 
   vscode.window.onDidChangeTextEditorSelection(
-    event => {
+    () => {
       if (
         activeEditor &&
         vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')
@@ -388,7 +397,7 @@ function activate(context) {
   );
 
   vscode.workspace.onDidSaveTextDocument(
-    _ => {
+    () => {
       if (activeEditor && vscode.workspace.getConfiguration('phpParameterHint').get('onSave')) {
         triggerUpdateDecorations(
           vscode.workspace.getConfiguration('phpParameterHint').get('saveDelay')

@@ -25,3 +25,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Option to show only arguments on current line now shows arguments in
   selection. If there is a large number of arguments to display, they will show
   once every an arbitrary number.
+
+## 0.0.9 (14-03-2020)
+
+- Added unique id to every update call, to cancel previous update call in case a
+  call is still active when a new update call is made.

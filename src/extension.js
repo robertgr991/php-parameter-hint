@@ -7,6 +7,8 @@ const hintDecorationType = vscode.window.createTextEditorDecorationType({});
 const channel = vscode.window.createOutputChannel('PHP Parameter Hint');
 const sameNameSign = '%';
 const literals = ['boolean', 'number', 'string', 'magic', 'nowdoc', 'array', 'null', 'encapsed'];
+const slowAfter = 150;
+const showOnceEvery = 20;
 
 /**
  * Print an error
@@ -35,7 +37,7 @@ function getParamName(editor, position, key, argumentName) {
 
     if (hoverCommand && hoverCommand.length) {
       try {
-        const regEx = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
+        const regEx = /(?<=@param.+)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
         let isFound = false;
 
         for (let hover of hoverCommand) {
@@ -48,7 +50,7 @@ function getParamName(editor, position, key, argumentName) {
               break;
             }
 
-            args = content.value.match(regEx);
+            args = [...new Set(content.value.match(regEx))];
 
             if (args) {
               isFound = true;
@@ -84,7 +86,7 @@ function getParamName(editor, position, key, argumentName) {
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-  let timeout = undefined;
+  let timeout;
   let activeEditor = vscode.window.activeTextEditor;
 
   /**
@@ -103,7 +105,7 @@ function activate(context) {
       return;
     }
 
-    let text = activeEditor.document.getText();
+    const text = activeEditor.document.getText();
     let phpArguments = [];
     const phpOpenTags = ['<?php', '<?=', '<?'];
     const phpCloseTag = '?>';
@@ -135,16 +137,65 @@ function activate(context) {
     }
 
     if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')) {
-      if (activeEditor.selection && activeEditor.selection.isEmpty) {
-        phpArguments = phpArguments.filter(argument => {
-          return argument.start.line === activeEditor.selection.start.line;
-        });
+      const currentSelection = activeEditor.selection;
+      let callback;
+
+      if (currentSelection) {
+        if (currentSelection.isEmpty) {
+          const lines = [];
+
+          activeEditor.selections.forEach(selection => {
+            if (selection.isEmpty) {
+              lines.push(selection.start.line);
+            }
+          });
+
+          callback = argument => {
+            return lines.includes(argument.start.line);
+          };
+        } else {
+          callback = argument => {
+            if (
+              argument.start.line > currentSelection.start.line &&
+              argument.end.line < currentSelection.end.line
+            ) {
+              return true;
+            }
+            if (
+              argument.start.line === currentSelection.start.line &&
+              argument.end.line < currentSelection.end.line
+            ) {
+              return argument.start.character >= currentSelection.start.character;
+            }
+            if (
+              argument.start.line === currentSelection.start.line &&
+              argument.end.line === currentSelection.end.line
+            ) {
+              return (
+                argument.start.character >= currentSelection.start.character &&
+                argument.end.character <= currentSelection.end.character
+              );
+            }
+            if (
+              argument.start.line > currentSelection.start.line &&
+              argument.end.line === currentSelection.end.line
+            ) {
+              return argument.end.character <= currentSelection.end.character;
+            }
+          };
+        }
+
+        phpArguments = phpArguments.filter(callback);
       }
     }
 
     const phpFunctions = [];
+    const collapseHintsWhenEqual = vscode.workspace
+      .getConfiguration('phpParameterHint')
+      .get('collapseHintsWhenEqual');
+    const phpArgumentsLen = phpArguments.length;
 
-    for (let index = 0; index < phpArguments.length; index++) {
+    for (let index = 0; index < phpArgumentsLen; index++) {
       var argument = phpArguments[index];
 
       const start = new vscode.Position(argument.start.line, argument.start.character);
@@ -166,10 +217,7 @@ function activate(context) {
         args = args.trim();
         let hint = '';
 
-        if (
-          vscode.workspace.getConfiguration('phpParameterHint').get('collapseHintsWhenEqual') &&
-          args.indexOf('$') === -1
-        ) {
+        if (collapseHintsWhenEqual && args.indexOf('$') === -1) {
           if (args === sameNameSign) {
             continue;
           } else {
@@ -184,8 +232,13 @@ function activate(context) {
         }
 
         const decorationPHP = Hints.paramHint(hint, new vscode.Range(start, end));
-
         phpFunctions.push(decorationPHP);
+
+        if (phpArgumentsLen > slowAfter) {
+          if (index % showOnceEvery === 0) {
+            activeEditor.setDecorations(hintDecorationType, phpFunctions);
+          }
+        }
       }
     }
 
@@ -201,14 +254,14 @@ function activate(context) {
    */
   function getPHPOnly(text, phpOpenTags, phpCloseTag) {
     let phpOnly = '';
-    let lastEnd = 0;
+    const lastEnd = 0;
 
     while (true) {
       let startIndex = Infinity;
       let currentOpenTag = '';
 
       phpOpenTags.forEach(tag => {
-        let tmpIndex = text.indexOf(tag);
+        const tmpIndex = text.indexOf(tag);
 
         if (tmpIndex !== -1 && tmpIndex < startIndex) {
           startIndex = tmpIndex;
@@ -220,26 +273,24 @@ function activate(context) {
         break;
       }
 
-      phpOnly = phpOnly + text.substring(lastEnd, startIndex).replace(/[^\n\t\r]{1}/g, ' ');
+      phpOnly += text.substring(lastEnd, startIndex).replace(/[^\n\t\r]{1}/g, ' ');
       text = text.substring(startIndex);
 
       startIndex = 0;
-      let endIndex = text.indexOf(phpCloseTag);
+      const endIndex = text.indexOf(phpCloseTag);
 
       if (endIndex === -1) {
-        phpOnly =
-          phpOnly +
-          text.substring(startIndex).replace(currentOpenTag, ' '.repeat(currentOpenTag.length));
+        phpOnly += text
+          .substring(startIndex)
+          .replace(currentOpenTag, ' '.repeat(currentOpenTag.length));
         break;
       } else {
-        let closeTagReplace = ';' + ' '.repeat(phpCloseTag.length - 1);
+        const closeTagReplace = ';' + ' '.repeat(phpCloseTag.length - 1);
 
-        phpOnly =
-          phpOnly +
-          text
-            .substring(startIndex, endIndex + phpCloseTag.length)
-            .replace(currentOpenTag, ' '.repeat(currentOpenTag.length))
-            .replace(phpCloseTag, closeTagReplace);
+        phpOnly += text
+          .substring(startIndex, endIndex + phpCloseTag.length)
+          .replace(currentOpenTag, ' '.repeat(currentOpenTag.length))
+          .replace(phpCloseTag, closeTagReplace);
         text = text.substring(endIndex + phpCloseTag.length);
       }
     }
@@ -274,7 +325,7 @@ function activate(context) {
       return;
     }
 
-    let intelephenseExtension = vscode.extensions.getExtension(
+    const intelephenseExtension = vscode.extensions.getExtension(
       'bmewburn.vscode-intelephense-client'
     );
 

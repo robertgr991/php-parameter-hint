@@ -30,3 +30,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Added unique id to every update call, to cancel previous update call in case a
   call is still active when a new update call is made.
+
+## 0.0.9 (15-03-2020)
+
+- Now parameters are taken from SignatureHelpProvider and the Hover content is
+  the fallback.

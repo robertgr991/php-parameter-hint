@@ -210,13 +210,25 @@ class Parser {
 
   parseArguments(obj) {
     obj.arguments.forEach((arg, index) => {
-      this.parseObject(arg);
-      const startLoc = arg.loc.start;
-      const endLoc = arg.loc.end;
-      const expressionLoc = obj.what.offset ? obj.what.offset.loc.start : obj.what.loc.end;
-      let argKind = arg.kind || '';
+      let argument = arg;
+      this.parseObject(argument);
 
-      if (arg.kind && arg.kind === 'identifier' && arg.name.name && arg.name.name === 'null') {
+      while (argument.kind === 'bin' && argument.left) {
+        argument = argument.left;
+      }
+
+      const startLoc = argument.loc.start;
+      const endLoc = argument.loc.end;
+
+      const expressionLoc = obj.what.offset ? obj.what.offset.loc.start : obj.what.loc.end;
+      let argKind = argument.kind || '';
+
+      if (
+        argument.kind &&
+        argument.kind === 'identifier' &&
+        argument.name.name &&
+        argument.name.name === 'null'
+      ) {
         argKind = 'null';
       }
 
@@ -234,7 +246,7 @@ class Parser {
           line: parseInt(endLoc.line, 10) - 1,
           character: parseInt(endLoc.column, 10)
         },
-        name: arg.name || '',
+        name: argument.name || '',
         kind: argKind
       };
 

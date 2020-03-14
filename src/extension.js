@@ -1,3 +1,11 @@
+/* eslint-disable no-async-promise-executor */
+/* eslint-disable no-param-reassign */
+/* eslint-disable no-continue */
+/* eslint-disable no-loop-func */
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-use-before-define */
+/* eslint-disable no-restricted-syntax */
+// eslint-disable-next-line import/no-unresolved
 const vscode = require('vscode');
 const Commands = require('./commands');
 const Parser = require('./parser');
@@ -16,66 +24,88 @@ let updateFuncId;
  * @param {string} err
  */
 function printError(err) {
-  channel.appendLine(new Date().toLocaleString() + ` Error: ${err}`);
+  channel.appendLine(`${new Date().toLocaleString()} Error: ${err}`);
 }
 
 /**
  * Get the parameter name
  *
  * @param {vscode.TextEditor} editor
- * @param {vscode.Position} position
+ * @param {vscode.Position} argumentPosition
+ * @param {vscode.Position} expressionPosition
  * @param {number} key integer
  * @param {string} argumentName
  */
-function getParamName(editor, position, key, argumentName) {
+function getParamName(editor, argumentPosition, expressionPosition, key, argumentName) {
   return new Promise(async (resolve, reject) => {
     let args = [];
-    const hoverCommand = await vscode.commands.executeCommand(
-      'vscode.executeHoverProvider',
+    let argsDef = [];
+    const regExDef = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
+    const signatureHelp = await vscode.commands.executeCommand(
+      'vscode.executeSignatureHelpProvider',
       editor.document.uri,
-      position
+      argumentPosition
     );
+    const signature = signatureHelp.signatures[0];
 
-    if (hoverCommand && hoverCommand.length) {
+    if (signature && signature.label) {
       try {
+        args = signature.label.match(regExDef);
+      } catch (err) {
+        printError(err);
+      }
+    } else {
+      // Fallback on hover command
+      try {
+        const hoverCommand = await vscode.commands.executeCommand(
+          'vscode.executeHoverProvider',
+          editor.document.uri,
+          expressionPosition
+        );
         const regEx = /(?<=@param.+)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
-        let isFound = false;
 
-        for (let hover of hoverCommand) {
-          if (isFound) {
+        for (const hover of hoverCommand) {
+          if (args.length) {
             break;
           }
 
-          for (let content of hover.contents) {
-            if (isFound) {
+          for (const content of hover.contents) {
+            if (args.length) {
               break;
             }
 
             args = [...new Set(content.value.match(regEx))];
 
-            if (args) {
-              isFound = true;
+            // If no parameters annotations found, try a regEx that takes the
+            // parameters from the function definition in hover content
+            if (!argsDef.length) {
+              argsDef = [...new Set(content.value.match(regExDef))];
             }
           }
         }
 
-        if (args && args.length) {
-          if (
-            vscode.workspace.getConfiguration('phpParameterHint').get('collapseHintsWhenEqual') &&
-            args[key] &&
-            argumentName &&
-            args[key].substring(args[key].indexOf('$') + 1) === argumentName
-          ) {
-            args[key] = args[key].substring(0, args[key].indexOf('$')) + sameNameSign;
-          }
+        if (!args || !args.length) {
+          args = argsDef;
         }
       } catch (err) {
         printError(err);
       }
     }
 
+    if (
+      args &&
+      args.length &&
+      vscode.workspace.getConfiguration('phpParameterHint').get('collapseHintsWhenEqual') &&
+      args[key] &&
+      argumentName &&
+      args[key].substring(args[key].indexOf('$') + 1) === argumentName
+    ) {
+      args[key] = args[key].substring(0, args[key].indexOf('$')) + sameNameSign;
+    }
+
     if (args && args.length) {
       resolve(args[key]);
+      return;
     }
 
     reject();
@@ -183,6 +213,8 @@ function activate(context) {
             ) {
               return argument.end.character <= currentSelection.end.character;
             }
+
+            return false;
           };
         }
 
@@ -196,8 +228,8 @@ function activate(context) {
       .get('collapseHintsWhenEqual');
     const phpArgumentsLen = phpArguments.length;
 
-    for (let index = 0; index < phpArgumentsLen; index++) {
-      var argument = phpArguments[index];
+    for (let index = 0; index < phpArgumentsLen; index += 1) {
+      const argument = phpArguments[index];
 
       const start = new vscode.Position(argument.start.line, argument.start.character);
       const end = new vscode.Position(argument.end.line, argument.end.character);
@@ -206,6 +238,7 @@ function activate(context) {
       try {
         args = await getParamName(
           activeEditor,
+          start,
           new vscode.Position(argument.expression.line, argument.expression.character),
           argument.key,
           argument.name
@@ -225,11 +258,10 @@ function activate(context) {
             hint = ` ${args.replace(sameNameSign, '')} `;
           }
         } else {
-          hint =
-            args
-              .replace('$', ' ')
-              .replace('... ', ' ...')
-              .replace('& ', ' &') + ': ';
+          hint = `${args
+            .replace('$', ' ')
+            .replace('... ', ' ...')
+            .replace('& ', ' &')}: `;
         }
 
         const decorationPHP = Hints.paramHint(hint, new vscode.Range(start, end));
@@ -292,7 +324,7 @@ function activate(context) {
           .replace(currentOpenTag, ' '.repeat(currentOpenTag.length));
         break;
       } else {
-        const closeTagReplace = ';' + ' '.repeat(phpCloseTag.length - 1);
+        const closeTagReplace = `;${' '.repeat(phpCloseTag.length - 1)}`;
 
         phpOnly += text
           .substring(startIndex, endIndex + phpCloseTag.length)
@@ -338,7 +370,7 @@ function activate(context) {
       'bmewburn.vscode-intelephense-client'
     );
 
-    if (!intelephenseExtension) {
+    if (!intelephenseExtension || !intelephenseExtension.isActive) {
       setTimeout(() => tryInitial(numberTries - 1), 2000);
     } else {
       setTimeout(triggerUpdateDecorations, 4000);

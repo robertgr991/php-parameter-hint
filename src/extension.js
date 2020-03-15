@@ -1,116 +1,30 @@
-/* eslint-disable no-async-promise-executor */
-/* eslint-disable no-param-reassign */
 /* eslint-disable no-continue */
-/* eslint-disable no-loop-func */
 /* eslint-disable no-await-in-loop */
-/* eslint-disable no-use-before-define */
-/* eslint-disable no-restricted-syntax */
 // eslint-disable-next-line import/no-unresolved
 const vscode = require('vscode');
 const Commands = require('./commands');
 const Parser = require('./parser');
 const Hints = require('./hints');
+const { printError } = require('./printer');
+const getParamName = require('./parameterExtractor');
+const { getPHPOnly } = require('./textExtractor');
+const { sameNameSign } = require('./utils');
 
 const hintDecorationType = vscode.window.createTextEditorDecorationType({});
-const channel = vscode.window.createOutputChannel('PHP Parameter Hint');
-const sameNameSign = '%';
-const literals = ['boolean', 'number', 'string', 'magic', 'nowdoc', 'array', 'null', 'encapsed'];
-const slowAfter = 150;
-const showOnceEvery = 20;
+const literals = [
+  'boolean',
+  'number',
+  'string',
+  'magic',
+  'nowdoc',
+  'array',
+  'null',
+  'encapsed',
+  'nullkeyword'
+];
+const slowAfter = 175;
+const showOnceEvery = 30;
 let updateFuncId;
-
-/**
- * Print an error
- * @param {string} err
- */
-function printError(err) {
-  channel.appendLine(`${new Date().toLocaleString()} Error: ${err}`);
-}
-
-/**
- * Get the parameter name
- *
- * @param {vscode.TextEditor} editor
- * @param {vscode.Position} argumentPosition
- * @param {vscode.Position} expressionPosition
- * @param {number} key integer
- * @param {string} argumentName
- */
-function getParamName(editor, argumentPosition, expressionPosition, key, argumentName) {
-  return new Promise(async (resolve, reject) => {
-    let args = [];
-    let argsDef = [];
-    const regExDef = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
-    const signatureHelp = await vscode.commands.executeCommand(
-      'vscode.executeSignatureHelpProvider',
-      editor.document.uri,
-      argumentPosition
-    );
-    const signature = signatureHelp.signatures[0];
-
-    if (signature && signature.label) {
-      try {
-        args = signature.label.match(regExDef);
-      } catch (err) {
-        printError(err);
-      }
-    } else {
-      // Fallback on hover command
-      try {
-        const hoverCommand = await vscode.commands.executeCommand(
-          'vscode.executeHoverProvider',
-          editor.document.uri,
-          expressionPosition
-        );
-        const regEx = /(?<=@param.+)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
-
-        for (const hover of hoverCommand) {
-          if (args.length) {
-            break;
-          }
-
-          for (const content of hover.contents) {
-            if (args.length) {
-              break;
-            }
-
-            args = [...new Set(content.value.match(regEx))];
-
-            // If no parameters annotations found, try a regEx that takes the
-            // parameters from the function definition in hover content
-            if (!argsDef.length) {
-              argsDef = [...new Set(content.value.match(regExDef))];
-            }
-          }
-        }
-
-        if (!args || !args.length) {
-          args = argsDef;
-        }
-      } catch (err) {
-        printError(err);
-      }
-    }
-
-    if (
-      args &&
-      args.length &&
-      vscode.workspace.getConfiguration('phpParameterHint').get('collapseHintsWhenEqual') &&
-      args[key] &&
-      argumentName &&
-      args[key].substring(args[key].indexOf('$') + 1) === argumentName
-    ) {
-      args[key] = args[key].substring(0, args[key].indexOf('$')) + sameNameSign;
-    }
-
-    if (args && args.length) {
-      resolve(args[key]);
-      return;
-    }
-
-    reject();
-  });
-}
 
 /**
  * This method is called when VSCode is activated
@@ -138,11 +52,9 @@ function activate(context) {
 
     const text = activeEditor.document.getText();
     let phpArguments = [];
-    const phpOpenTags = ['<?php', '<?=', '<?'];
-    const phpCloseTag = '?>';
 
     try {
-      const phpOnly = getPHPOnly(text, phpOpenTags, phpCloseTag);
+      const phpOnly = getPHPOnly(text);
       const isPhp7 = vscode.workspace.getConfiguration('phpParameterHint').get('php7');
       const parser = new Parser(isPhp7);
       parser.parse(phpOnly);
@@ -227,8 +139,13 @@ function activate(context) {
       .getConfiguration('phpParameterHint')
       .get('collapseHintsWhenEqual');
     const phpArgumentsLen = phpArguments.length;
+    const functionDictionary = new Map();
 
     for (let index = 0; index < phpArgumentsLen; index += 1) {
+      if (funcId !== updateFuncId) {
+        break;
+      }
+
       const argument = phpArguments[index];
 
       const start = new vscode.Position(argument.start.line, argument.start.character);
@@ -237,6 +154,8 @@ function activate(context) {
       let args;
       try {
         args = await getParamName(
+          functionDictionary,
+          argument.functionName,
           activeEditor,
           start,
           new vscode.Position(argument.expression.line, argument.expression.character),
@@ -258,10 +177,7 @@ function activate(context) {
             hint = ` ${args.replace(sameNameSign, '')} `;
           }
         } else {
-          hint = `${args
-            .replace('$', ' ')
-            .replace('... ', ' ...')
-            .replace('& ', ' &')}: `;
+          hint = `${args.replace('$', ' ').replace('& ', ' &')}: `;
         }
 
         const decorationPHP = Hints.paramHint(hint, new vscode.Range(start, end));
@@ -282,59 +198,6 @@ function activate(context) {
     if (funcId === updateFuncId) {
       activeEditor.setDecorations(hintDecorationType, phpFunctions);
     }
-  }
-
-  /**
-   * Return only text containing php code, rest of the text is converted to *spaces
-   *
-   * @param {string} text
-   * @param {array} phpOpenTags
-   * @param {string} phpCloseTag
-   */
-  function getPHPOnly(text, phpOpenTags, phpCloseTag) {
-    let phpOnly = '';
-    const lastEnd = 0;
-
-    while (true) {
-      let startIndex = Infinity;
-      let currentOpenTag = '';
-
-      phpOpenTags.forEach(tag => {
-        const tmpIndex = text.indexOf(tag);
-
-        if (tmpIndex !== -1 && tmpIndex < startIndex) {
-          startIndex = tmpIndex;
-          currentOpenTag = tag;
-        }
-      });
-
-      if (startIndex === Infinity) {
-        break;
-      }
-
-      phpOnly += text.substring(lastEnd, startIndex).replace(/[^\n\t\r]{1}/g, ' ');
-      text = text.substring(startIndex);
-
-      startIndex = 0;
-      const endIndex = text.indexOf(phpCloseTag);
-
-      if (endIndex === -1) {
-        phpOnly += text
-          .substring(startIndex)
-          .replace(currentOpenTag, ' '.repeat(currentOpenTag.length));
-        break;
-      } else {
-        const closeTagReplace = `;${' '.repeat(phpCloseTag.length - 1)}`;
-
-        phpOnly += text
-          .substring(startIndex, endIndex + phpCloseTag.length)
-          .replace(currentOpenTag, ' '.repeat(currentOpenTag.length))
-          .replace(phpCloseTag, closeTagReplace);
-        text = text.substring(endIndex + phpCloseTag.length);
-      }
-    }
-
-    return phpOnly;
   }
 
   /**

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-expressions */
 const engine = require('php-parser');
 
 class Parser {
@@ -48,7 +49,7 @@ class Parser {
         this.parseArguments(obj);
       }
 
-      if (['function', 'method', 'catch', 'closure'].includes(obj.kind)) {
+      if (['function', 'method', 'catch', 'closure', 'arrowfunc'].includes(obj.kind)) {
         obj.body && this.parseObject(obj.body);
       }
 
@@ -121,7 +122,7 @@ class Parser {
         obj.alternate && this.parseObject(obj.alternate);
       }
 
-      if (['encapsed'].includes(obj.kind)) {
+      if (['encapsed', 'nowdoc', 'yieldfrom'].includes(obj.kind)) {
         obj.value && this.parseObject(obj.value);
       }
 
@@ -131,7 +132,7 @@ class Parser {
         obj.falseExpr && this.parseObject(obj.falseExpr);
       }
 
-      if (['program', 'block'].includes(obj.kind)) {
+      if (['program', 'block', 'namespace'].includes(obj.kind)) {
         if (obj.children) {
           if (Array.isArray(obj.children)) {
             obj.children.forEach(child => {
@@ -209,6 +210,12 @@ class Parser {
   }
 
   parseArguments(obj) {
+    let functionName = '';
+
+    if (obj.what && obj.what.kind === 'classreference') {
+      functionName = obj.what.name;
+    }
+
     obj.arguments.forEach((arg, index) => {
       let argument = arg;
       this.parseObject(argument);
@@ -247,7 +254,8 @@ class Parser {
           character: parseInt(endLoc.column, 10)
         },
         name: argument.name || '',
-        kind: argKind
+        kind: argKind,
+        functionName
       };
 
       this.phpArguments.push(phpArgument);

@@ -1,5 +1,3 @@
-/* eslint-disable no-loop-func */
-/* eslint-disable no-param-reassign */
 const phpOpenTags = ['<?php', '<?=', '<?'];
 const phpCloseTag = '?>';
 

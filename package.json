@@ -59,7 +59,7 @@
           "phpParameterHint.saveDelay": {
             "type": "integer",
             "description": "Delay in ms for on document save run",
-            "default": 500
+            "default": 250
           },
           "phpParameterHint.onChange": {
             "type": "boolean",
@@ -74,7 +74,7 @@
           "phpParameterHint.textEditorChangeDelay": {
             "type": "integer",
             "description": "Delay in ms for on active text editor change",
-            "default": 750
+            "default": 250
           },
           "phpParameterHint.collapseHintsWhenEqual": {
             "type": "boolean",

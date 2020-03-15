@@ -39,4 +39,4 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.1.1 (15-03-2020)
 
 - Update parser. Set status bar message after execution of a command.
-  Separation.
+  Separation. Grouping arguments by function, to avoid unnecessary calls to signature helper.

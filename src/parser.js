@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-expressions */
 const engine = require('php-parser');
 
 class Parser {
@@ -7,7 +6,7 @@ class Parser {
    * @param {boolean} isPhp7
    */
   constructor(isPhp7 = true) {
-    this.phpArguments = [];
+    this.phpFunctionGroups = [];
     this.parser = new engine({
       parser: {
         extractDoc: true,
@@ -30,7 +29,7 @@ class Parser {
    * @param {string} code
    */
   parse(code) {
-    this.phpArguments = [];
+    this.phpFunctionGroups = [];
     const parsedCode = this.parser.parseEval(code);
     this.parseObject(parsedCode);
   }
@@ -210,13 +209,19 @@ class Parser {
   }
 
   parseArguments(obj) {
-    let functionName = '';
+    const expressionLoc = obj.what.offset ? obj.what.offset.loc.start : obj.what.loc.end;
+    const phpFunctionGroup = {
+      name: '',
+      args: [],
+      line: parseInt(expressionLoc.line, 10) - 1,
+      character: parseInt(expressionLoc.column, 10)
+    };
 
     if (obj.what && obj.what.kind === 'classreference') {
-      functionName = obj.what.name;
+      phpFunctionGroup.name = obj.what.name;
     }
 
-    obj.arguments.forEach((arg, index) => {
+    obj.arguments.forEach(arg => {
       let argument = arg;
       this.parseObject(argument);
 
@@ -226,8 +231,6 @@ class Parser {
 
       const startLoc = argument.loc.start;
       const endLoc = argument.loc.end;
-
-      const expressionLoc = obj.what.offset ? obj.what.offset.loc.start : obj.what.loc.end;
       let argKind = argument.kind || '';
 
       if (
@@ -239,12 +242,7 @@ class Parser {
         argKind = 'null';
       }
 
-      const phpArgument = {
-        expression: {
-          line: parseInt(expressionLoc.line, 10) - 1,
-          character: parseInt(expressionLoc.column, 10)
-        },
-        key: index,
+      phpFunctionGroup.args.push({
         start: {
           line: parseInt(startLoc.line, 10) - 1,
           character: parseInt(startLoc.column, 10)
@@ -254,12 +252,13 @@ class Parser {
           character: parseInt(endLoc.column, 10)
         },
         name: argument.name || '',
-        kind: argKind,
-        functionName
-      };
-
-      this.phpArguments.push(phpArgument);
+        kind: argKind
+      });
     });
+
+    if (phpFunctionGroup.args.length) {
+      this.phpFunctionGroups.push(phpFunctionGroup);
+    }
   }
 }
 

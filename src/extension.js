@@ -1,12 +1,10 @@
-/* eslint-disable no-continue */
-/* eslint-disable no-await-in-loop */
 // eslint-disable-next-line import/no-unresolved
 const vscode = require('vscode');
 const Commands = require('./commands');
 const Parser = require('./parser');
 const Hints = require('./hints');
 const { printError } = require('./printer');
-const getParamName = require('./parameterExtractor');
+const getParamsNames = require('./parameterExtractor');
 const { getPHPOnly } = require('./textExtractor');
 const { sameNameSign } = require('./utils');
 
@@ -22,8 +20,8 @@ const literals = [
   'encapsed',
   'nullkeyword'
 ];
-const slowAfter = 175;
-const showOnceEvery = 30;
+const slowAfterNrParam = 250;
+const showParamsOnceEvery = 50;
 let updateFuncId;
 
 /**
@@ -51,14 +49,14 @@ function activate(context) {
     }
 
     const text = activeEditor.document.getText();
-    let phpArguments = [];
+    let phpFunctionGroups = [];
 
     try {
       const phpOnly = getPHPOnly(text);
       const isPhp7 = vscode.workspace.getConfiguration('phpParameterHint').get('php7');
       const parser = new Parser(isPhp7);
       parser.parse(phpOnly);
-      phpArguments = parser.phpArguments;
+      phpFunctionGroups = parser.phpFunctionGroups;
     } catch (err) {
       printError(err);
 
@@ -67,15 +65,20 @@ function activate(context) {
       }
     }
 
-    if (phpArguments.length === 0) {
+    if (phpFunctionGroups.length === 0) {
       activeEditor.setDecorations(hintDecorationType, []);
 
       return;
     }
 
     if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLiterals')) {
-      phpArguments = phpArguments.filter(argument => {
-        return literals.includes(argument.kind);
+      phpFunctionGroups = phpFunctionGroups.filter(phpFunctionGroup => {
+        // eslint-disable-next-line no-param-reassign
+        phpFunctionGroup.args = phpFunctionGroup.args.filter(arg => {
+          return literals.includes(arg.kind);
+        });
+
+        return phpFunctionGroup.args.length > 0;
       });
     }
 
@@ -130,73 +133,78 @@ function activate(context) {
           };
         }
 
-        phpArguments = phpArguments.filter(callback);
+        phpFunctionGroups = phpFunctionGroups.filter(phpFunctionGroup => {
+          // eslint-disable-next-line no-param-reassign
+          phpFunctionGroup.args = phpFunctionGroup.args.filter(callback);
+
+          return phpFunctionGroup.args.length > 0;
+        });
       }
     }
 
-    const phpFunctions = [];
+    const phpArgumentsLen = phpFunctionGroups.reduce((accumulator, currentGroup) => {
+      return accumulator + currentGroup.args.length;
+    }, 0);
+    let nrArgs = 0;
+    const phpDecorations = [];
     const collapseHintsWhenEqual = vscode.workspace
       .getConfiguration('phpParameterHint')
       .get('collapseHintsWhenEqual');
-    const phpArgumentsLen = phpArguments.length;
+    const phpFunctionGroupsLen = phpFunctionGroups.length;
     const functionDictionary = new Map();
 
-    for (let index = 0; index < phpArgumentsLen; index += 1) {
+    for (let index = 0; index < phpFunctionGroupsLen; index += 1) {
       if (funcId !== updateFuncId) {
         break;
       }
 
-      const argument = phpArguments[index];
-
-      const start = new vscode.Position(argument.start.line, argument.start.character);
-      const end = new vscode.Position(argument.end.line, argument.end.character);
-
+      const functionGroup = phpFunctionGroups[index];
       let args;
+
       try {
-        args = await getParamName(
-          functionDictionary,
-          argument.functionName,
-          activeEditor,
-          start,
-          new vscode.Position(argument.expression.line, argument.expression.character),
-          argument.key,
-          argument.name
-        );
+        args = await getParamsNames(functionDictionary, functionGroup, activeEditor);
       } catch (err) {
         printError(err);
       }
 
-      if (args) {
-        args = args.trim();
-        let hint = '';
+      if (args && args.length) {
+        for (const arg of args) {
+          arg.name = arg.name.trim();
+          let hint = '';
 
-        if (collapseHintsWhenEqual && args.indexOf('$') === -1) {
-          if (args === sameNameSign) {
-            continue;
+          if (collapseHintsWhenEqual && arg.name.indexOf('$') === -1) {
+            if (arg.name === sameNameSign) {
+              continue;
+            } else {
+              hint = ` ${arg.name.replace(sameNameSign, '')} `;
+            }
           } else {
-            hint = ` ${args.replace(sameNameSign, '')} `;
+            hint = `${arg.name.replace('$', ' ').replace('& ', ' &')}: `;
           }
-        } else {
-          hint = `${args.replace('$', ' ').replace('& ', ' &')}: `;
-        }
 
-        const decorationPHP = Hints.paramHint(hint, new vscode.Range(start, end));
-        phpFunctions.push(decorationPHP);
+          const decorationPHP = Hints.paramHint(hint, arg.range);
+          phpDecorations.push(decorationPHP);
+          nrArgs += 1;
 
-        if (funcId !== updateFuncId) {
-          break;
-        }
+          if (funcId !== updateFuncId) {
+            break;
+          }
 
-        if (phpArgumentsLen > slowAfter) {
-          if (index % showOnceEvery === 0) {
-            activeEditor.setDecorations(hintDecorationType, phpFunctions);
+          if (phpArgumentsLen > slowAfterNrParam) {
+            if (nrArgs % showParamsOnceEvery === 0) {
+              activeEditor.setDecorations(hintDecorationType, phpDecorations);
+            }
           }
         }
+      }
+
+      if (funcId !== updateFuncId) {
+        break;
       }
     }
 
     if (funcId === updateFuncId) {
-      activeEditor.setDecorations(hintDecorationType, phpFunctions);
+      activeEditor.setDecorations(hintDecorationType, phpDecorations);
     }
   }
 

@@ -1,6 +1,4 @@
 /* eslint-disable import/no-unresolved */
-/* eslint-disable no-async-promise-executor */
-/* eslint-disable no-restricted-syntax */
 const vscode = require('vscode');
 const { printError } = require('./printer');
 const { sameNameSign } = require('./utils');
@@ -9,33 +7,25 @@ const { sameNameSign } = require('./utils');
  * Get the parameter name
  *
  * @param {Map<string, Array<string>>} functionDictionary
- * @param {string} functionName
+ * @param {Object} functionGroup
  * @param {vscode.TextEditor} editor
- * @param {vscode.Position} argumentPosition
- * @param {vscode.Position} expressionPosition
- * @param {number} key integer
- * @param {string} argumentName
  */
-function getParamName(
-  functionDictionary,
-  functionName,
-  editor,
-  argumentPosition,
-  expressionPosition,
-  key,
-  argumentName
-) {
+function getParamsNames(functionDictionary, functionGroup, editor) {
   return new Promise(async (resolve, reject) => {
+    const finalArgs = [];
     let args = [];
+    const collapseHintsWhenEqual = vscode.workspace
+      .getConfiguration('phpParameterHint')
+      .get('collapseHintsWhenEqual');
 
-    if (functionName && functionDictionary.has(functionName)) {
-      args = functionDictionary.get(functionName);
+    if (functionGroup.name && functionDictionary.has(functionGroup.name)) {
+      args = functionDictionary.get(functionGroup.name);
     } else {
       const regExDef = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
       const signatureHelp = await vscode.commands.executeCommand(
         'vscode.executeSignatureHelpProvider',
         editor.document.uri,
-        argumentPosition
+        new vscode.Position(functionGroup.args[0].start.line, functionGroup.args[0].start.character)
       );
       const signature = signatureHelp.signatures[0];
 
@@ -53,7 +43,7 @@ function getParamName(
           const hoverCommand = await vscode.commands.executeCommand(
             'vscode.executeHoverProvider',
             editor.document.uri,
-            expressionPosition
+            new vscode.Position(functionGroup.line, functionGroup.character)
           );
           const regEx = /(?<=@param.+)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
 
@@ -85,8 +75,8 @@ function getParamName(
         }
       }
 
-      if (functionName && args && args.length) {
-        functionDictionary.set(functionName, args);
+      if (functionGroup.name && args && args.length) {
+        functionDictionary.set(functionGroup.name, args);
       }
     }
 
@@ -113,35 +103,44 @@ function getParamName(
         return arg;
       });
 
-      // f key is bigger than the arguments length, check if there was a rest
-      // parameter before and name it appropriately
-      if (key >= argsLength) {
-        if (hasRestParameter) {
-          args[key] = `${restParameterName}[${key - restParameterIndex}]`;
+      for (let index = 0; index < functionGroup.args.length; index += 1) {
+        if (index === argsLength && !hasRestParameter) {
+          break;
         }
+
+        const groupArg = functionGroup.args[index];
+        const arg = args[index] || '';
+        const finalArg = {};
+        const groupArgStart = new vscode.Position(groupArg.start.line, groupArg.start.character);
+        const groupArgEnd = new vscode.Position(groupArg.end.line, groupArg.end.character);
+
+        finalArg.range = new vscode.Range(groupArgStart, groupArgEnd);
+        finalArg.name = arg;
+
+        // If key is bigger than the arguments length, check if there was a rest
+        // parameter before and name it appropriately
+        if (index >= argsLength) {
+          finalArg.name = `${restParameterName}[${index - restParameterIndex}]`;
+        }
+
+        if (collapseHintsWhenEqual && groupArg.name) {
+          const squareBracketIndex = finalArg.name.indexOf('[');
+          const whereSquareBracket =
+            squareBracketIndex === -1 ? finalArg.name.length : squareBracketIndex;
+          const dollarSignIndex = finalArg.name.indexOf('$');
+
+          if (finalArg.name.substring(dollarSignIndex + 1, whereSquareBracket) === groupArg.name) {
+            finalArg.name =
+              finalArg.name.substring(0, dollarSignIndex) +
+              sameNameSign +
+              finalArg.name.substring(whereSquareBracket);
+          }
+        }
+
+        finalArgs.push(finalArg);
       }
 
-      if (
-        args &&
-        args.length &&
-        args[key] &&
-        vscode.workspace.getConfiguration('phpParameterHint').get('collapseHintsWhenEqual') &&
-        argumentName
-      ) {
-        const squareBracketIndex = args[key].indexOf('[');
-        const whereSquareBracket =
-          squareBracketIndex === -1 ? args[key].length : squareBracketIndex;
-        const dollarSignIndex = args[key].indexOf('$');
-
-        if (args[key].substring(dollarSignIndex + 1, whereSquareBracket) === argumentName) {
-          args[key] =
-            args[key].substring(0, dollarSignIndex) +
-            sameNameSign +
-            args[key].substring(whereSquareBracket);
-        }
-      }
-
-      resolve(args[key]);
+      resolve(finalArgs);
       return;
     }
 
@@ -149,4 +148,4 @@ function getParamName(
   });
 }
 
-module.exports = getParamName;
+module.exports = getParamsNames;

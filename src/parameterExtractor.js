@@ -22,12 +22,16 @@ function getParamsNames(functionDictionary, functionGroup, editor) {
       args = functionDictionary.get(functionGroup.name);
     } else {
       const regExDef = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
+      let signature;
       const signatureHelp = await vscode.commands.executeCommand(
         'vscode.executeSignatureHelpProvider',
         editor.document.uri,
         new vscode.Position(functionGroup.args[0].start.line, functionGroup.args[0].start.character)
       );
-      const signature = signatureHelp.signatures[0];
+
+      if (signatureHelp) {
+        [signature] = signatureHelp.signatures;
+      }
 
       if (signature && signature.label) {
         try {
@@ -47,28 +51,30 @@ function getParamsNames(functionDictionary, functionGroup, editor) {
           );
           const regEx = /(?<=@param.+)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
 
-          for (const hover of hoverCommand) {
-            if (args.length) {
-              break;
-            }
-
-            for (const content of hover.contents) {
+          if (hoverCommand) {
+            for (const hover of hoverCommand) {
               if (args.length) {
                 break;
               }
 
-              args = [...new Set(content.value.match(regEx))];
+              for (const content of hover.contents) {
+                if (args.length) {
+                  break;
+                }
 
-              // If no parameters annotations found, try a regEx that takes the
-              // parameters from the function definition in hover content
-              if (!argsDef.length) {
-                argsDef = [...new Set(content.value.match(regExDef))];
+                args = [...new Set(content.value.match(regEx))];
+
+                // If no parameters annotations found, try a regEx that takes the
+                // parameters from the function definition in hover content
+                if (!argsDef.length) {
+                  argsDef = [...new Set(content.value.match(regExDef))];
+                }
               }
             }
-          }
 
-          if (!args || !args.length) {
-            args = argsDef;
+            if (!args || !args.length) {
+              args = argsDef;
+            }
           }
         } catch (err) {
           printError(err);

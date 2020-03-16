@@ -256,7 +256,7 @@ class Parser {
       });
     });
 
-    if (phpFunctionGroup.args.length) {
+    if (phpFunctionGroup.args.length && obj.what && obj.what.kind !== 'variable') {
       this.phpFunctionGroups.push(phpFunctionGroup);
     }
   }

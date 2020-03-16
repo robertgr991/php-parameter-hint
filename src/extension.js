@@ -20,8 +20,8 @@ const literals = [
   'encapsed',
   'nullkeyword'
 ];
-const slowAfterNrParam = 250;
-const showParamsOnceEvery = 50;
+const slowAfterNrParam = 300;
+const showParamsOnceEvery = 100;
 let updateFuncId;
 
 /**

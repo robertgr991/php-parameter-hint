@@ -221,7 +221,7 @@ class Parser {
       phpFunctionGroup.name = obj.what.name;
     }
 
-    obj.arguments.forEach(arg => {
+    obj.arguments.forEach((arg, index) => {
       let argument = arg;
       this.parseObject(argument);
 
@@ -243,6 +243,7 @@ class Parser {
       }
 
       phpFunctionGroup.args.push({
+        key: index,
         start: {
           line: parseInt(startLoc.line, 10) - 1,
           character: parseInt(startLoc.column, 10)

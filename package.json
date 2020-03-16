@@ -2,7 +2,7 @@
   "name": "php-parameter-hint",
   "displayName": "PHP Parameter Hint",
   "description": "PHP parameter hint for VS Code",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "robertgr991",
   "engines": {
     "vscode": "^1.35.1"
@@ -137,7 +137,7 @@
     "colors": [
       {
         "id": "phpParameterHint.hintForeground",
-        "description": "Specifies the foreground color for the annotations",
+        "description": "Specifies the foreground color for the hints",
         "defaults": {
           "dark": "#FFFFFF",
           "light": "#1a0000",
@@ -146,7 +146,7 @@
       },
       {
         "id": "phpParameterHint.hintBackground",
-        "description": "Specifies the background color for the annotations",
+        "description": "Specifies the background color for the hints",
         "defaults": {
           "dark": "#42475A",
           "light": "#FFFFFF",

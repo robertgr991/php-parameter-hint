@@ -60,7 +60,10 @@ function activate(context) {
     } catch (err) {
       printError(err);
 
-      if (vscode.workspace.getConfiguration('phpParameterHint').get('onChange')) {
+      if (
+        vscode.workspace.getConfiguration('phpParameterHint').get('onChange') ||
+        vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')
+      ) {
         return;
       }
     }
@@ -111,14 +114,14 @@ function activate(context) {
               argument.start.line === currentSelection.start.line &&
               argument.end.line < currentSelection.end.line
             ) {
-              return argument.start.character >= currentSelection.start.character;
+              return argument.end.character > currentSelection.start.character;
             }
             if (
               argument.start.line === currentSelection.start.line &&
               argument.end.line === currentSelection.end.line
             ) {
               return (
-                argument.start.character >= currentSelection.start.character &&
+                argument.start.character >= currentSelection.start.character ||
                 argument.end.character <= currentSelection.end.character
               );
             }
@@ -126,7 +129,7 @@ function activate(context) {
               argument.start.line > currentSelection.start.line &&
               argument.end.line === currentSelection.end.line
             ) {
-              return argument.end.character <= currentSelection.end.character;
+              return argument.start.character < currentSelection.end.character;
             }
 
             return false;

@@ -109,12 +109,18 @@ function getParamsNames(functionDictionary, functionGroup, editor) {
         return arg;
       });
 
-      for (let index = 0; index < functionGroup.args.length; index += 1) {
+      let groupArgsCount = 0;
+
+      for (
+        let index = functionGroup.args[0].key;
+        index < functionGroup.args[functionGroup.args.length - 1].key + 1;
+        index += 1
+      ) {
         if (index === argsLength && !hasRestParameter) {
           break;
         }
 
-        const groupArg = functionGroup.args[index];
+        const groupArg = functionGroup.args[groupArgsCount];
         const arg = args[index] || '';
         const finalArg = {};
         const groupArgStart = new vscode.Position(groupArg.start.line, groupArg.start.character);
@@ -144,6 +150,7 @@ function getParamsNames(functionDictionary, functionGroup, editor) {
         }
 
         finalArgs.push(finalArg);
+        groupArgsCount += 1;
       }
 
       resolve(finalArgs);

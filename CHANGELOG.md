@@ -40,3 +40,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Update parser. Set status bar message after execution of a command.
   Separation. Grouping arguments by function, to avoid unnecessary calls to signature helper.
+
+## 0.1.2 (16-03-2020)
+
+- Update README and fixed bug with hint only current line.

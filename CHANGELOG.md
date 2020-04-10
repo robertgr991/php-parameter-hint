@@ -44,3 +44,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.1.2 (16-03-2020)
 
 - Update README and fixed bug with hint only current line.
+
+## 0.1.3(11-04-2020)
+
+- New way of getting only the text containing php, old function was breaking if
+  a php tag was in a comment/string. Refactoring.

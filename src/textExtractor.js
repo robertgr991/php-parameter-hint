@@ -6,51 +6,157 @@ const phpCloseTag = '?>';
  *
  * @param {string} text
  */
-function getPHPOnly(text) {
-  let phpOnly = '';
-  const lastEnd = 0;
+const getPHPOnly = text => {
+  let docIdentifier = '';
+  const docStart = '<<<';
+  let inPHP = false;
+  let inString = false;
+  let inDoc = false;
+  let inPHPComment = false;
+  let phpCommentType = '';
+  let whatString = ``;
+  let whatDoc = '';
+  const singleLineComment = '//';
+  const multiLineCommentStart = '/*';
+  const multiLineCommentEnd = '*/';
+  let finalText = '';
 
-  while (true) {
-    let startIndex = Infinity;
-    let currentOpenTag = '';
+  for (let i = 0; i < text.length; i += 1) {
+    if (!inPHP) {
+      if (text[i] === '<') {
+        let tmpLen = 0;
 
-    phpOpenTags.forEach(tag => {
-      const tmpIndex = text.indexOf(tag);
+        for (let j = 0; j < phpOpenTags.length; j += 1) {
+          const tagLength = phpOpenTags[j].length;
 
-      if (tmpIndex !== -1 && tmpIndex < startIndex) {
-        startIndex = tmpIndex;
-        currentOpenTag = tag;
+          if (
+            text.slice(i, i + tagLength) === phpOpenTags[j] &&
+            (j > 0 || [' ', '\n', '\t', '\r'].includes(text[i + tagLength]))
+          ) {
+            tmpLen = tagLength;
+            inPHP = true;
+            break;
+          }
+        }
+
+        if (inPHP) {
+          finalText += ' '.repeat(tmpLen);
+          i += tmpLen - 1;
+          continue;
+        }
       }
-    });
 
-    if (startIndex === Infinity) {
-      break;
-    }
+      if (['\t', '\n', '\r', ''].includes(text[i])) {
+        finalText += text[i];
+      } else {
+        finalText += ' ';
+      }
+    } else if (inString || inDoc || inPHPComment) {
+      if (inString) {
+        if (text[i] === whatString && text[i - 1] !== '\\') {
+          inString = false;
+          whatString = '';
+        }
 
-    phpOnly += text.substring(lastEnd, startIndex).replace(/[^\n\t\r]{1}/g, ' ');
-    text = text.substring(startIndex);
+        finalText += text[i];
+      } else if (inDoc) {
+        const docLen = docIdentifier.length;
 
-    startIndex = 0;
-    const endIndex = text.indexOf(phpCloseTag);
+        if (
+          [' ', '\n', '\t'].includes(text[i - 1]) &&
+          text.slice(i, i + docLen) === docIdentifier &&
+          (text[i + docLen] === ';' || !/[a-zA-Z0-9_]$/gi.test(text[i + docLen]))
+        ) {
+          inDoc = false;
+          docIdentifier = '';
+          finalText += `${text.slice(i, i + docLen)}`;
+          i += docLen - 1;
+        } else {
+          finalText += text[i];
+        }
+      } else if (inPHPComment) {
+        if (phpCommentType === 'single' && ['\n'].includes(text[i])) {
+          inPHPComment = false;
+          phpCommentType = '';
+          finalText += text[i];
+          continue;
+        } else if (
+          phpCommentType === 'multi' &&
+          text.slice(i, i + multiLineCommentEnd.length) === multiLineCommentEnd
+        ) {
+          inPHPComment = false;
+          phpCommentType = '';
+          finalText += multiLineCommentEnd;
+          i += multiLineCommentEnd.length - 1;
+          continue;
+        }
 
-    if (endIndex === -1) {
-      phpOnly += text
-        .substring(startIndex)
-        .replace(currentOpenTag, ' '.repeat(currentOpenTag.length));
-      break;
+        finalText += text[i];
+      }
+    } else if ([`"`, `'`].includes(text[i])) {
+      inString = true;
+      whatString = text[i];
+      finalText += text[i];
+    } else if (text.slice(i, i + docStart.length) === docStart) {
+      inDoc = true;
+      finalText += docStart;
+      i += docStart.length;
+
+      if (text[i] === "'") {
+        whatDoc = 'now';
+        finalText += "'";
+        i += 1;
+      } else {
+        if (text[i] === '"') {
+          finalText += '"';
+          i += 1;
+        }
+
+        whatDoc = 'here';
+      }
+
+      while (i < text.length) {
+        if (whatDoc === 'now' && text[i] === "'") {
+          if (text[i] === "'") {
+            finalText += text[i];
+            break;
+          }
+        } else if (text[i] === '"') {
+          finalText += text[i];
+          break;
+        } else if (['\n', ' ', '\t', '\r'].includes(text[i])) {
+          finalText += text[i];
+          break;
+        }
+
+        finalText += text[i];
+        docIdentifier += text[i];
+        i += 1;
+      }
+    } else if (text.slice(i, i + singleLineComment.length) === singleLineComment) {
+      inPHPComment = true;
+      phpCommentType = 'single';
+      finalText += singleLineComment;
+      i += singleLineComment.length - 1;
+      continue;
+    } else if (text.slice(i, i + multiLineCommentStart.length) === multiLineCommentStart) {
+      inPHPComment = true;
+      phpCommentType = 'multi';
+      finalText += multiLineCommentStart;
+      i += multiLineCommentStart.length - 1;
+      continue;
+    } else if (text[i] === '?' && text.slice(i, i + phpCloseTag.length) === phpCloseTag) {
+      inPHP = false;
+      const closeTagLen = phpCloseTag.length;
+      finalText += `;${' '.repeat(closeTagLen - 1)}`;
+      i += closeTagLen - 1;
     } else {
-      const closeTagReplace = `;${' '.repeat(phpCloseTag.length - 1)}`;
-
-      phpOnly += text
-        .substring(startIndex, endIndex + phpCloseTag.length)
-        .replace(currentOpenTag, ' '.repeat(currentOpenTag.length))
-        .replace(phpCloseTag, closeTagReplace);
-      text = text.substring(endIndex + phpCloseTag.length);
+      finalText += text[i];
     }
   }
 
-  return phpOnly;
-}
+  return finalText;
+};
 
 module.exports = {
   getPHPOnly

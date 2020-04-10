@@ -137,7 +137,6 @@ function activate(context) {
         }
 
         phpFunctionGroups = phpFunctionGroups.filter(phpFunctionGroup => {
-          // eslint-disable-next-line no-param-reassign
           phpFunctionGroup.args = phpFunctionGroup.args.filter(callback);
 
           return phpFunctionGroup.args.length > 0;

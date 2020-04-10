@@ -10,7 +10,7 @@ const { sameNameSign } = require('./utils');
  * @param {Object} functionGroup
  * @param {vscode.TextEditor} editor
  */
-function getParamsNames(functionDictionary, functionGroup, editor) {
+const getParamsNames = (functionDictionary, functionGroup, editor) => {
   return new Promise(async (resolve, reject) => {
     const finalArgs = [];
     let args = [];
@@ -159,6 +159,6 @@ function getParamsNames(functionDictionary, functionGroup, editor) {
 
     reject();
   });
-}
+};
 
 module.exports = getParamsNames;

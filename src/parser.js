@@ -54,13 +54,7 @@ class Parser {
 
       if (['array'].includes(obj.kind)) {
         if (obj.items) {
-          if (Array.isArray(obj.items)) {
-            obj.items.forEach(item => {
-              this.parseObject(item);
-            });
-          } else {
-            this.parseObject(obj.items);
-          }
+          this.parseObject(obj.items);
         }
       }
 
@@ -81,7 +75,6 @@ class Parser {
           obj.expression && obj.expression.right && this.parseObject(obj.expression.right);
           obj.expression &&
             !obj.expression.left &&
-            obj.expression &&
             this.parseObject(obj.expression);
         }
       }
@@ -133,13 +126,7 @@ class Parser {
 
       if (['program', 'block', 'namespace'].includes(obj.kind)) {
         if (obj.children) {
-          if (Array.isArray(obj.children)) {
-            obj.children.forEach(child => {
-              this.parseObject(child);
-            });
-          } else {
-            this.parseObject(obj.children);
-          }
+          this.parseObject(obj.children);
         }
       }
 
@@ -184,13 +171,7 @@ class Parser {
 
       if (['class', 'trait'].includes(obj.kind)) {
         if (obj.body) {
-          if (Array.isArray(obj.body)) {
-            obj.body.forEach(classStatement => {
-              this.parseObject(classStatement);
-            });
-          } else {
-            this.parseObject(obj.body);
-          }
+          this.parseObject(obj.body);
         }
       }
 

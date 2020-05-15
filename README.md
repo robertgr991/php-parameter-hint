@@ -8,12 +8,12 @@ Inserts parameter hints into function calls to easily understand the parameter r
 
 ## Settings
 
-There are currently a few configurable settings in the extension.
-
 | Name                                      | Description                                                                                                                                           | Default  |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `phpParameterHint.enabled`                | Enable PHP Parameter Hint                                                                                                                             | true     |
 | `phpParameterHint.margin`                 | Hints styling of margin CSS property                                                                                                                  | 2        |
+| `phpParameterHint.verticalPadding`        | Top and bottom padding of the hints(px)                                                                                                               | 1        |
+| `phpParameterHint.horizontalPadding`      | Right and left padding of the hints(px)                                                                                                               | 0        |
 | `phpParameterHint.fontWeight`             | Hints styling of font-weight CSS property                                                                                                             | "400"    |
 | `phpParameterHint.fontStyle`              | Hints styling of font-style CSS property                                                                                                              | "italic" |
 | `phpParameterHint.fontSize`               | Hints styling of font size CSS property                                                                                                               | 12       |

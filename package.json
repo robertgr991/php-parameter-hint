@@ -97,18 +97,18 @@
             "default": true
           },
           "phpParameterHint.fontWeight": {
-            "type": "string",
-            "default": "400",
+            "type": "number",
+            "default": 400,
             "enum": [
-              "100",
-              "200",
-              "300",
-              "400",
-              "500",
-              "600",
-              "700",
-              "800",
-              "900"
+              100,
+              200,
+              300,
+              400,
+              500,
+              600,
+              700,
+              800,
+              900
             ],
             "description": "Hints styling of font-weight CSS property"
           },
@@ -125,6 +125,16 @@
             "type": "number",
             "default": 2,
             "description": "Hints styling of margin CSS property"
+          },
+          "phpParameterHint.verticalPadding": {
+            "type": "number",
+            "default": 1,
+            "description": "Top and bottom padding of the hints"
+          },
+          "phpParameterHint.horizontalPadding": {
+            "type": "number",
+            "default": 0,
+            "description": "Right and left padding of the hints"
           },
           "phpParameterHint.fontSize": {
             "type": "number",

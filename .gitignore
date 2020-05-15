@@ -108,3 +108,4 @@ dist
 *.vsix
 .DS_STORE
 .history/
+.vscode/settings.json

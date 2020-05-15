@@ -49,3 +49,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - New way of getting only the text containing php, old function was breaking if
   a php tag was in a comment/string. Refactoring.
+
+## 0.1.4(15-05-2020)
+
+- Add configuration for the vertical and horizontal padding of the decoration.

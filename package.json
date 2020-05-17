@@ -2,7 +2,7 @@
   "name": "php-parameter-hint",
   "displayName": "PHP Parameter Hint",
   "description": "PHP parameter hint for VS Code",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "robertgr991",
   "engines": {
     "vscode": "^1.35.1"
@@ -133,7 +133,7 @@
           },
           "phpParameterHint.horizontalPadding": {
             "type": "number",
-            "default": 0,
+            "default": 4,
             "description": "Right and left padding of the hints"
           },
           "phpParameterHint.fontSize": {

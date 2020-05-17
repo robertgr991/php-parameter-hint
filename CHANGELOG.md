@@ -53,3 +53,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.1.4(15-05-2020)
 
 - Add configuration for the vertical and horizontal padding of the decoration.
+
+## 0.1.5(17-05-2020)
+
+- Remove the white spaces before and after the hint, to allow it to be fully
+  customizable by changing the horizontal padding. Increase the default
+  horizontal padding so decorations look like before the removal of white spaces.

@@ -178,10 +178,10 @@ function activate(context) {
             if (arg.name === sameNameSign) {
               continue;
             } else {
-              hint = ` ${arg.name.replace(sameNameSign, '')} `;
+              hint = `${arg.name.replace(sameNameSign, '')}`;
             }
           } else {
-            hint = `${arg.name.replace('$', ' ').replace('& ', ' &')}: `;
+            hint = `${arg.name.replace('$', '').replace('& ', '&')}:`;
           }
 
           const decorationPHP = Hints.paramHint(hint, arg.range);

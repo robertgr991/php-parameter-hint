@@ -109,3 +109,4 @@ dist
 .DS_STORE
 .history/
 .vscode/settings.json
+.vscode/snipsnap.code-snippets

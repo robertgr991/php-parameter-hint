@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-unresolved
 const vscode = require('vscode');
-const Commands = require('./commands');
+const { Commands } = require('./commands');
 const Parser = require('./parser');
 const Hints = require('./hints');
 const { printError } = require('./printer');
@@ -23,6 +23,12 @@ const literals = [
 const slowAfterNrParam = 300;
 const showParamsOnceEvery = 100;
 let updateFuncId;
+
+const pause = () => {
+  return new Promise(resolve => {
+    setTimeout(resolve, 1);
+  });
+};
 
 /**
  * This method is called when VSCode is activated
@@ -137,6 +143,7 @@ function activate(context) {
         }
 
         phpFunctionGroups = phpFunctionGroups.filter(phpFunctionGroup => {
+          // eslint-disable-next-line no-param-reassign
           phpFunctionGroup.args = phpFunctionGroup.args.filter(callback);
 
           return phpFunctionGroup.args.length > 0;
@@ -164,18 +171,20 @@ function activate(context) {
       let args;
 
       try {
+        // eslint-disable-next-line no-await-in-loop
         args = await getParamsNames(functionDictionary, functionGroup, activeEditor);
       } catch (err) {
         printError(err);
       }
 
       if (args && args.length) {
+        // eslint-disable-next-line no-restricted-syntax
         for (const arg of args) {
-          arg.name = arg.name.trim();
           let hint = '';
 
           if (collapseHintsWhenEqual && arg.name.indexOf('$') === -1) {
             if (arg.name === sameNameSign) {
+              // eslint-disable-next-line no-continue
               continue;
             } else {
               hint = `${arg.name.replace(sameNameSign, '')}`;
@@ -195,6 +204,8 @@ function activate(context) {
           if (phpArgumentsLen > slowAfterNrParam) {
             if (nrArgs % showParamsOnceEvery === 0) {
               activeEditor.setDecorations(hintDecorationType, phpDecorations);
+              // eslint-disable-next-line no-await-in-loop
+              await pause();
             }
           }
         }

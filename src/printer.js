@@ -9,7 +9,7 @@ const channel = vscode.window.createOutputChannel('PHP Parameter Hint');
  */
 const printError = err => {
   channel.appendLine(`${new Date().toLocaleString()} Error: ${err}`);
-}
+};
 
 module.exports = {
   printError

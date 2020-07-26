@@ -59,3 +59,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Remove the white spaces before and after the hint, to allow it to be fully
   customizable by changing the horizontal padding. Increase the default
   horizontal padding so decorations look like before the removal of white spaces.
+
+## 0.2.0(26-07-2020)
+
+- Add option to toggle between showing only parameter name, type and name or
+  only type, if type is available

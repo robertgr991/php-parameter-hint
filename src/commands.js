@@ -1,6 +1,9 @@
 /* eslint-disable import/no-unresolved */
 const vscode = require('vscode');
 
+// default = 'disabled' - only name
+const showTypeEnum = Object.freeze({ 0: 'disabled', 1: 'type and name', 2: 'type' });
+
 class Commands {
   static registerCommands() {
     const messageHeader = 'PHP Parameter Hint: ';
@@ -13,6 +16,23 @@ class Commands {
       message = `${messageHeader} Hints ${currentState ? 'disabled' : 'enabled'}`;
 
       vscode.workspace.getConfiguration('phpParameterHint').update('enabled', !currentState, true);
+      vscode.window.setStatusBarMessage(message, hideMessageAfterMs);
+    });
+
+    // Command to toggle between showing param name, name and type and only type
+    const showTypeKeys = Object.keys(showTypeEnum).map(key => parseInt(key, 10));
+    const minShowType = Math.min(...showTypeKeys);
+    const maxShowType = Math.max(...showTypeKeys);
+    vscode.commands.registerCommand('phpParameterHint.toggleTypeName', () => {
+      const currentShowState = vscode.workspace
+        .getConfiguration('phpParameterHint')
+        .get('hintTypeName');
+      const newShowState = currentShowState >= maxShowType ? minShowType : currentShowState + 1;
+      message = `${messageHeader} Hint both name and type: ${showTypeEnum[newShowState]}`;
+
+      vscode.workspace
+        .getConfiguration('phpParameterHint')
+        .update('hintTypeName', newShowState, true);
       vscode.window.setStatusBarMessage(message, hideMessageAfterMs);
     });
 
@@ -59,4 +79,4 @@ class Commands {
   }
 }
 
-module.exports = Commands;
+module.exports = { Commands, showTypeEnum };

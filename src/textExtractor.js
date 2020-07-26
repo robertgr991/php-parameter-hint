@@ -1,3 +1,4 @@
+/* eslint-disable no-continue */
 const phpOpenTags = ['<?php', '<?=', '<?'];
 const phpCloseTag = '?>';
 

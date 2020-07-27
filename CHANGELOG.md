@@ -64,3 +64,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Add option to toggle between showing only parameter name, type and name or
   only type, if type is available
+
+## 0.2.1(27-07-2020)
+
+- Updated the PHP Parser to the latest version

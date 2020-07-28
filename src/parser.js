@@ -202,13 +202,13 @@ class Parser {
     const expressionLoc = obj.what.offset
       ? obj.what.offset.loc.start
       : obj.what.loc.end;
+
     const phpFunctionGroup = {
       name: "",
       args: [],
       line: parseInt(expressionLoc.line, 10) - 1,
       character: parseInt(expressionLoc.column, 10),
     };
-
     if (obj.what && obj.what.kind === "classreference") {
       phpFunctionGroup.name = obj.what.name;
     }
@@ -233,7 +233,6 @@ class Parser {
       ) {
         argKind = "null";
       }
-
       phpFunctionGroup.args.push({
         key: index,
         start: {

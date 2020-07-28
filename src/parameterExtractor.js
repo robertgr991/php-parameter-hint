@@ -29,7 +29,6 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
   const hintTypeName = vscode.workspace.getConfiguration("phpParameterHint")
     .get("hintTypeName");
   const showTypeState = showTypeEnum[hintTypeName];
-
   if (functionGroup.name && functionDictionary.has(functionGroup.name)) {
     args = functionDictionary.get(functionGroup.name);
   } else {
@@ -76,14 +75,14 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
           "vscode.executeHoverProvider",
           editor.document.uri,
           new vscode.Position(
-            functionGroup.args[0].start.line,
-            functionGroup.args[0].start.character,
+            functionGroup.line,
+            functionGroup.character,
           ),
         );
         let regEx;
 
         if (showTypeState === "disabled") {
-          regEx = /(?<=@param_ )((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
+          regEx = /(?<=@param_ )(?:.*?)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
         } else {
           regEx = /(?<=@param_ )(([^$])+(\.\.\.)?($)?\$[a-zA-Z0-9_]+)/gims;
         }
@@ -98,11 +97,14 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
               if (args.length) {
                 break;
               }
+              let res = [];
+              let match;
+              while ((match = regEx.exec(content.value)) !== null) {
+                res.push(match[1].replace("`", "").trim())
+              }
               args = [
                 ...new Set(
-                  content.value.match(regEx).map((label) =>
-                    label.replace("`", "").trim()
-                  ),
+                  res
                 ),
               ];
 
@@ -196,7 +198,7 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
 
         if (
           finalArg.name.substring(dollarSignIndex + 1, whereSquareBracket) ===
-            groupArg.name
+          groupArg.name
         ) {
           finalArg.name = finalArg.name.substring(0, dollarSignIndex) +
             sameNameSign +

@@ -68,3 +68,4 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.2.1(27-07-2020)
 
 - Updated the PHP Parser to the latest version
+- Fixed an issue for no typed mode where params weren't visible.

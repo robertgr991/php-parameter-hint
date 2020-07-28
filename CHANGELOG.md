@@ -68,3 +68,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.2.1(28-07-2020)
 
 - Show only the "short" name of the type, without the namespace
+
+## 0.2.2(29-07-2020)
+
+- Updated the PHP Parser to the latest version
+- Fixed an issue for no typed mode where params weren't visible.

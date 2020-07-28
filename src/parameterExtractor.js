@@ -13,6 +13,22 @@ const filterOnlyTypeLabels = args =>
     })
     .filter(label => label !== '');
 
+const resolveTypeHint = (showTypeState, args) => {
+  const newArgs = args.map(arg => {
+    const [type, label] = arg.split(' ');
+
+    if (typeof label === 'undefined') {
+      return type;
+    }
+
+    const splittedType = type.split('\\');
+
+    return `${splittedType[splittedType.length - 1].replace('?', '')} ${label}`;
+  });
+
+  return showTypeState === 'type' ? filterOnlyTypeLabels(newArgs) : newArgs;
+};
+
 /**
  * Get the parameter name
  *
@@ -55,8 +71,8 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
       try {
         args = signature.label.match(regExDef).map(label => label.trim().replace('(', ''));
 
-        if (showTypeState === 'type') {
-          args = filterOnlyTypeLabels(args);
+        if (showTypeState !== 'disabled') {
+          args = resolveTypeHint(showTypeState, args);
         }
       } catch (err) {
         printError(err);
@@ -94,8 +110,8 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
                 ...new Set(content.value.match(regEx).map(label => label.replace('`', '').trim()))
               ];
 
-              if (showTypeState === 'type') {
-                args = filterOnlyTypeLabels(args);
+              if (showTypeState !== 'disabled') {
+                args = resolveTypeHint(args);
               }
 
               // If no parameters annotations found, try a regEx that takes the

@@ -1,31 +1,31 @@
 // eslint-disable-next-line import/no-unresolved
-const vscode = require('vscode');
-const { Commands } = require('./commands');
-const Parser = require('./parser');
-const Hints = require('./hints');
-const { printError } = require('./printer');
-const getParamsNames = require('./parameterExtractor');
-const { getPHPOnly } = require('./textExtractor');
-const { sameNameSign } = require('./utils');
+const vscode = require("vscode");
+const { Commands } = require("./commands");
+const Parser = require("./parser");
+const Hints = require("./hints");
+const { printError } = require("./printer");
+const getParamsNames = require("./parameterExtractor");
+const { getPHPOnly } = require("./textExtractor");
+const { sameNameSign } = require("./utils");
 
 const hintDecorationType = vscode.window.createTextEditorDecorationType({});
 const literals = [
-  'boolean',
-  'number',
-  'string',
-  'magic',
-  'nowdoc',
-  'array',
-  'null',
-  'encapsed',
-  'nullkeyword'
+  "boolean",
+  "number",
+  "string",
+  "magic",
+  "nowdoc",
+  "array",
+  "null",
+  "encapsed",
+  "nullkeyword",
 ];
 const slowAfterNrParam = 300;
 const showParamsOnceEvery = 100;
 let updateFuncId;
 
 const pause = () => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, 1);
   });
 };
@@ -42,11 +42,16 @@ function activate(context) {
    * Get the PHP code then parse it and create parameter hints
    */
   async function updateDecorations(funcId) {
-    if (!activeEditor || !activeEditor.document || activeEditor.document.languageId !== 'php') {
+    if (
+      !activeEditor || !activeEditor.document ||
+      activeEditor.document.languageId !== "php"
+    ) {
       return;
     }
 
-    const isEnabled = vscode.workspace.getConfiguration('phpParameterHint').get('enabled');
+    const isEnabled = vscode.workspace.getConfiguration("phpParameterHint").get(
+      "enabled",
+    );
 
     if (!isEnabled) {
       activeEditor.setDecorations(hintDecorationType, []);
@@ -59,7 +64,9 @@ function activate(context) {
 
     try {
       const phpOnly = getPHPOnly(text);
-      const isPhp7 = vscode.workspace.getConfiguration('phpParameterHint').get('php7');
+      const isPhp7 = vscode.workspace.getConfiguration("phpParameterHint").get(
+        "php7",
+      );
       const parser = new Parser(isPhp7);
       parser.parse(phpOnly);
       phpFunctionGroups = parser.phpFunctionGroups;
@@ -67,8 +74,10 @@ function activate(context) {
       printError(err);
 
       if (
-        vscode.workspace.getConfiguration('phpParameterHint').get('onChange') ||
-        vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')
+        vscode.workspace.getConfiguration("phpParameterHint").get("onChange") ||
+        vscode.workspace.getConfiguration("phpParameterHint").get(
+          "hintOnlyLine",
+        )
       ) {
         return;
       }
@@ -80,10 +89,14 @@ function activate(context) {
       return;
     }
 
-    if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLiterals')) {
-      phpFunctionGroups = phpFunctionGroups.filter(phpFunctionGroup => {
+    if (
+      vscode.workspace.getConfiguration("phpParameterHint").get(
+        "hintOnlyLiterals",
+      )
+    ) {
+      phpFunctionGroups = phpFunctionGroups.filter((phpFunctionGroup) => {
         // eslint-disable-next-line no-param-reassign
-        phpFunctionGroup.args = phpFunctionGroup.args.filter(arg => {
+        phpFunctionGroup.args = phpFunctionGroup.args.filter((arg) => {
           return literals.includes(arg.kind);
         });
 
@@ -91,7 +104,9 @@ function activate(context) {
       });
     }
 
-    if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')) {
+    if (
+      vscode.workspace.getConfiguration("phpParameterHint").get("hintOnlyLine")
+    ) {
       const currentSelection = activeEditor.selection;
       let callback;
 
@@ -99,17 +114,17 @@ function activate(context) {
         if (currentSelection.isEmpty) {
           const lines = [];
 
-          activeEditor.selections.forEach(selection => {
+          activeEditor.selections.forEach((selection) => {
             if (selection.isEmpty) {
               lines.push(selection.start.line);
             }
           });
 
-          callback = argument => {
+          callback = (argument) => {
             return lines.includes(argument.start.line);
           };
         } else {
-          callback = argument => {
+          callback = (argument) => {
             if (
               argument.start.line > currentSelection.start.line &&
               argument.end.line < currentSelection.end.line
@@ -127,7 +142,8 @@ function activate(context) {
               argument.end.line === currentSelection.end.line
             ) {
               return (
-                argument.start.character >= currentSelection.start.character ||
+                argument.start.character >=
+                currentSelection.start.character ||
                 argument.end.character <= currentSelection.end.character
               );
             }
@@ -142,7 +158,7 @@ function activate(context) {
           };
         }
 
-        phpFunctionGroups = phpFunctionGroups.filter(phpFunctionGroup => {
+        phpFunctionGroups = phpFunctionGroups.filter((phpFunctionGroup) => {
           // eslint-disable-next-line no-param-reassign
           phpFunctionGroup.args = phpFunctionGroup.args.filter(callback);
 
@@ -151,17 +167,19 @@ function activate(context) {
       }
     }
 
-    const phpArgumentsLen = phpFunctionGroups.reduce((accumulator, currentGroup) => {
-      return accumulator + currentGroup.args.length;
-    }, 0);
+    const phpArgumentsLen = phpFunctionGroups.reduce(
+      (accumulator, currentGroup) => {
+        return accumulator + currentGroup.args.length;
+      },
+      0,
+    );
     let nrArgs = 0;
     const phpDecorations = [];
     const collapseHintsWhenEqual = vscode.workspace
-      .getConfiguration('phpParameterHint')
-      .get('collapseHintsWhenEqual');
+      .getConfiguration("phpParameterHint")
+      .get("collapseHintsWhenEqual");
     const phpFunctionGroupsLen = phpFunctionGroups.length;
     const functionDictionary = new Map();
-
     for (let index = 0; index < phpFunctionGroupsLen; index += 1) {
       if (funcId !== updateFuncId) {
         break;
@@ -172,7 +190,11 @@ function activate(context) {
 
       try {
         // eslint-disable-next-line no-await-in-loop
-        args = await getParamsNames(functionDictionary, functionGroup, activeEditor);
+        args = await getParamsNames(
+          functionDictionary,
+          functionGroup,
+          activeEditor,
+        );
       } catch (err) {
         printError(err);
       }
@@ -180,17 +202,17 @@ function activate(context) {
       if (args && args.length) {
         // eslint-disable-next-line no-restricted-syntax
         for (const arg of args) {
-          let hint = '';
+          let hint = "";
 
-          if (collapseHintsWhenEqual && arg.name.indexOf('$') === -1) {
+          if (collapseHintsWhenEqual && arg.name.indexOf("$") === -1) {
             if (arg.name === sameNameSign) {
               // eslint-disable-next-line no-continue
               continue;
             } else {
-              hint = `${arg.name.replace(sameNameSign, '')}`;
+              hint = `${arg.name.replace(sameNameSign, "")}`;
             }
           } else {
-            hint = `${arg.name.replace('$', '').replace('& ', '&')}:`;
+            hint = `${arg.name.replace("$", "").replace("& ", "&")}:`;
           }
 
           const decorationPHP = Hints.paramHint(hint, arg.range);
@@ -200,7 +222,6 @@ function activate(context) {
           if (funcId !== updateFuncId) {
             break;
           }
-
           if (phpArgumentsLen > slowAfterNrParam) {
             if (nrArgs % showParamsOnceEvery === 0) {
               activeEditor.setDecorations(hintDecorationType, phpDecorations);
@@ -251,7 +272,7 @@ function activate(context) {
     }
 
     const intelephenseExtension = vscode.extensions.getExtension(
-      'bmewburn.vscode-intelephense-client'
+      "bmewburn.vscode-intelephense-client",
     );
 
     if (!intelephenseExtension || !intelephenseExtension.isActive) {
@@ -261,8 +282,8 @@ function activate(context) {
     }
   }
 
-  vscode.workspace.onDidChangeConfiguration(event => {
-    if (event.affectsConfiguration('phpParameterHint')) {
+  vscode.workspace.onDidChangeConfiguration((event) => {
+    if (event.affectsConfiguration("phpParameterHint")) {
       triggerUpdateDecorations();
     }
   });
@@ -270,58 +291,69 @@ function activate(context) {
   Commands.registerCommands();
 
   vscode.window.onDidChangeActiveTextEditor(
-    editor => {
+    (editor) => {
       activeEditor = editor;
 
       if (editor) {
         triggerUpdateDecorations(
-          vscode.workspace.getConfiguration('phpParameterHint').get('textEditorChangeDelay')
+          vscode.workspace.getConfiguration("phpParameterHint").get(
+            "textEditorChangeDelay",
+          ),
         );
       }
     },
     null,
-    context.subscriptions
+    context.subscriptions,
   );
 
   vscode.window.onDidChangeTextEditorSelection(
     () => {
       if (
         activeEditor &&
-        vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')
+        vscode.workspace.getConfiguration("phpParameterHint").get(
+          "hintOnlyLine",
+        )
       ) {
         triggerUpdateDecorations(0);
       }
     },
     null,
-    context.subscriptions
+    context.subscriptions,
   );
 
   vscode.workspace.onDidChangeTextDocument(
-    event => {
+    (event) => {
       if (
         activeEditor &&
         event.document === activeEditor.document &&
-        vscode.workspace.getConfiguration('phpParameterHint').get('onChange')
+        vscode.workspace.getConfiguration("phpParameterHint").get("onChange")
       ) {
         triggerUpdateDecorations(
-          vscode.workspace.getConfiguration('phpParameterHint').get('changeDelay')
+          vscode.workspace.getConfiguration("phpParameterHint").get(
+            "changeDelay",
+          ),
         );
       }
     },
     null,
-    context.subscriptions
+    context.subscriptions,
   );
 
   vscode.workspace.onDidSaveTextDocument(
     () => {
-      if (activeEditor && vscode.workspace.getConfiguration('phpParameterHint').get('onSave')) {
+      if (
+        activeEditor &&
+        vscode.workspace.getConfiguration("phpParameterHint").get("onSave")
+      ) {
         triggerUpdateDecorations(
-          vscode.workspace.getConfiguration('phpParameterHint').get('saveDelay')
+          vscode.workspace.getConfiguration("phpParameterHint").get(
+            "saveDelay",
+          ),
         );
       }
     },
     null,
-    context.subscriptions
+    context.subscriptions,
   );
 
   if (activeEditor) {
@@ -330,5 +362,5 @@ function activate(context) {
 }
 
 module.exports = {
-  activate
+  activate,
 };

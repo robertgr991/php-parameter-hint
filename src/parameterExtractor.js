@@ -1,17 +1,17 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable import/no-unresolved */
-const vscode = require('vscode');
-const { printError } = require('./printer');
-const { sameNameSign } = require('./utils');
-const { showTypeEnum } = require('./commands');
+const vscode = require("vscode");
+const { printError } = require("./printer");
+const { sameNameSign } = require("./utils");
+const { showTypeEnum } = require("./commands");
 
-const filterOnlyTypeLabels = args =>
+const filterOnlyTypeLabels = (args) =>
   args
-    .map(label => {
-      const labels = label.split(' ');
-      return labels.length > 1 ? labels[0] : '';
+    .map((label) => {
+      const labels = label.split(" ");
+      return labels.length > 1 ? labels[0] : "";
     })
-    .filter(label => label !== '');
+    .filter((label) => label !== "");
 
 const resolveTypeHint = (showTypeState, args) => {
   const newArgs = args.map(arg => {
@@ -40,17 +40,17 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
   const finalArgs = [];
   let args = [];
   const collapseHintsWhenEqual = vscode.workspace
-    .getConfiguration('phpParameterHint')
-    .get('collapseHintsWhenEqual');
-  const hintTypeName = vscode.workspace.getConfiguration('phpParameterHint').get('hintTypeName');
+    .getConfiguration("phpParameterHint")
+    .get("collapseHintsWhenEqual");
+  const hintTypeName = vscode.workspace.getConfiguration("phpParameterHint")
+    .get("hintTypeName");
   const showTypeState = showTypeEnum[hintTypeName];
-
   if (functionGroup.name && functionDictionary.has(functionGroup.name)) {
     args = functionDictionary.get(functionGroup.name);
   } else {
     let regExDef;
 
-    if (showTypeState === 'disabled') {
+    if (showTypeState === "disabled") {
       regExDef = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
     } else {
       regExDef = /(?<=\(?)([^,$]+\$[a-zA-Z0-9_]+)(?=.*\))/gims;
@@ -58,9 +58,12 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
 
     let signature;
     const signatureHelp = await vscode.commands.executeCommand(
-      'vscode.executeSignatureHelpProvider',
+      "vscode.executeSignatureHelpProvider",
       editor.document.uri,
-      new vscode.Position(functionGroup.args[0].start.line, functionGroup.args[0].start.character)
+      new vscode.Position(
+        functionGroup.args[0].start.line,
+        functionGroup.args[0].start.character,
+      ),
     );
 
     if (signatureHelp) {
@@ -69,7 +72,9 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
 
     if (signature && signature.label) {
       try {
-        args = signature.label.match(regExDef).map(label => label.trim().replace('(', ''));
+        args = signature.label.match(regExDef).map((label) =>
+          label.trim().replace("(", "")
+        );
 
         if (showTypeState !== 'disabled') {
           args = resolveTypeHint(showTypeState, args);
@@ -83,14 +88,17 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
 
       try {
         const hoverCommand = await vscode.commands.executeCommand(
-          'vscode.executeHoverProvider',
+          "vscode.executeHoverProvider",
           editor.document.uri,
-          new vscode.Position(functionGroup.line, functionGroup.character)
+          new vscode.Position(
+            functionGroup.line,
+            functionGroup.character,
+          ),
         );
         let regEx;
 
-        if (showTypeState === 'disabled') {
-          regEx = /(?<=@param_ )((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
+        if (showTypeState === "disabled") {
+          regEx = /(?<=@param_ )(?:.*?)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
         } else {
           regEx = /(?<=@param_ )(([^$])+(\.\.\.)?($)?\$[a-zA-Z0-9_]+)/gims;
         }
@@ -105,9 +113,15 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
               if (args.length) {
                 break;
               }
-
+              let res = [];
+              let match;
+              while ((match = regEx.exec(content.value)) !== null) {
+                res.push(match[1].replace("`", "").trim())
+              }
               args = [
-                ...new Set(content.value.match(regEx).map(label => label.replace('`', '').trim()))
+                ...new Set(
+                  res
+                ),
               ];
 
               if (showTypeState !== 'disabled') {
@@ -140,7 +154,7 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
     // Check if there is a rest parameter and return the parameter names in array-like style
     let hasRestParameter = false;
     let restParameterIndex = -1;
-    let restParameterName = '';
+    let restParameterName = "";
     const argsLength = args.length;
 
     /**
@@ -148,7 +162,7 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
      * @param {number} index
      */
     args = args.map((arg, index) => {
-      if (arg.substr(0, 3) === '...') {
+      if (arg.substr(0, 3) === "...") {
         hasRestParameter = true;
         restParameterIndex = index;
         restParameterName = arg.slice(3);
@@ -171,10 +185,16 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
       }
 
       const groupArg = functionGroup.args[groupArgsCount];
-      const arg = args[index] || '';
+      const arg = args[index] || "";
       const finalArg = {};
-      const groupArgStart = new vscode.Position(groupArg.start.line, groupArg.start.character);
-      const groupArgEnd = new vscode.Position(groupArg.end.line, groupArg.end.character);
+      const groupArgStart = new vscode.Position(
+        groupArg.start.line,
+        groupArg.start.character,
+      );
+      const groupArgEnd = new vscode.Position(
+        groupArg.end.line,
+        groupArg.end.character,
+      );
 
       finalArg.range = new vscode.Range(groupArgStart, groupArgEnd);
       finalArg.name = arg;
@@ -186,14 +206,17 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
       }
 
       if (collapseHintsWhenEqual && groupArg.name) {
-        const squareBracketIndex = finalArg.name.indexOf('[');
-        const whereSquareBracket =
-          squareBracketIndex === -1 ? finalArg.name.length : squareBracketIndex;
-        const dollarSignIndex = finalArg.name.indexOf('$');
+        const squareBracketIndex = finalArg.name.indexOf("[");
+        const whereSquareBracket = squareBracketIndex === -1
+          ? finalArg.name.length
+          : squareBracketIndex;
+        const dollarSignIndex = finalArg.name.indexOf("$");
 
-        if (finalArg.name.substring(dollarSignIndex + 1, whereSquareBracket) === groupArg.name) {
-          finalArg.name =
-            finalArg.name.substring(0, dollarSignIndex) +
+        if (
+          finalArg.name.substring(dollarSignIndex + 1, whereSquareBracket) ===
+          groupArg.name
+        ) {
+          finalArg.name = finalArg.name.substring(0, dollarSignIndex) +
             sameNameSign +
             finalArg.name.substring(whereSquareBracket);
         }
@@ -206,7 +229,7 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
     return finalArgs;
   }
 
-  throw new Error('No arguments');
+  throw new Error("No arguments");
 };
 
 module.exports = getParamsNames;

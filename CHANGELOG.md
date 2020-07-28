@@ -68,3 +68,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.2.1(28-07-2020)
 
 - Show only the "short" name of the type, without the namespace
+
+## 0.2.2(28-07-2020)
+
+- Fix regex for PHPDoc parsing when using hover provider: https://github.com/DominicVonk

@@ -90,7 +90,7 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
         let regEx;
 
         if (showTypeState === 'disabled') {
-          regEx = /(?<=@param_ )((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
+          regEx = /(?<=@param_ )(?:.*?)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
         } else {
           regEx = /(?<=@param_ )(([^$])+(\.\.\.)?($)?\$[a-zA-Z0-9_]+)/gims;
         }

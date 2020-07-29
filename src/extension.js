@@ -22,6 +22,7 @@ const literals = [
 ];
 const slowAfterNrParam = 300;
 const showParamsOnceEvery = 100;
+const initialNrTries = 3;
 let updateFuncId;
 
 const pause = () => {
@@ -187,13 +188,13 @@ function activate(context) {
               // eslint-disable-next-line no-continue
               continue;
             } else {
-              hint = `${arg.name.replace(sameNameSign, '')}`;
+              hint = `${arg.name.replace(sameNameSign, '')}:`;
             }
           } else {
             hint = `${arg.name.replace('$', '').replace('& ', '&')}:`;
           }
 
-          const decorationPHP = Hints.paramHint(hint, arg.range);
+          const decorationPHP = Hints.paramHint(hint.trim(), arg.range);
           phpDecorations.push(decorationPHP);
           nrArgs += 1;
 
@@ -204,6 +205,7 @@ function activate(context) {
           if (phpArgumentsLen > slowAfterNrParam) {
             if (nrArgs % showParamsOnceEvery === 0) {
               activeEditor.setDecorations(hintDecorationType, phpDecorations);
+              // Continue on next event loop iteration to avoid high CPU load
               // eslint-disable-next-line no-await-in-loop
               await pause();
             }
@@ -325,7 +327,7 @@ function activate(context) {
   );
 
   if (activeEditor) {
-    tryInitial(3);
+    tryInitial(initialNrTries);
   }
 }
 

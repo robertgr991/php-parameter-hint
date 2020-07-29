@@ -72,3 +72,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.2.2(28-07-2020)
 
 - Fix regex for PHPDoc parsing when using hover provider: https://github.com/DominicVonk
+
+## 0.2.3(29-07-2020)
+
+- When available, use doc from signature help provider + some refactoring

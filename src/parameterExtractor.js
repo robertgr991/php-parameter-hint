@@ -2,14 +2,30 @@
 /* eslint-disable import/no-unresolved */
 const vscode = require('vscode');
 const { printError } = require('./printer');
-const { sameNameSign } = require('./utils');
+const { sameNameSign, isDefined } = require('./utils');
 const { showTypeEnum } = require('./commands');
+
+const isVariadic = label => label.substr(0, 3) === '...' || label.substr(0, 4) === '&...';
+
+const getVariadic = label => (label.substr(0, 3) === '...' ? '...' : '&...');
+
+const getNameAfterVariadic = label =>
+  label.substr(0, 3) === '...' ? label.slice(3) : label.replace('...', '');
 
 const filterOnlyTypeLabels = args =>
   args
     .map(label => {
       const labels = label.split(' ');
-      return labels.length > 1 ? labels[0] : '';
+
+      if (labels.length > 1) {
+        /**
+         * Keep the splat operator for rest param even when
+         * not showing param name to be able to correctly decorate the arguments
+         */
+        return isVariadic(labels[1]) ? `${labels[0]} ${getVariadic(labels[1])}` : labels[0];
+      }
+
+      return '';
     })
     .filter(label => label !== '');
 
@@ -17,13 +33,23 @@ const resolveTypeHint = (showTypeState, args) => {
   const newArgs = args.map(arg => {
     const [type, label] = arg.split(' ');
 
-    if (typeof label === 'undefined') {
+    if (!isDefined(label)) {
       return type;
     }
 
+    /**
+     * Keep only the short name of the type
+     * stripping away any namespace
+     */
     const splittedType = type.split('\\');
+    let finalType = splittedType[splittedType.length - 1];
 
-    return `${splittedType[splittedType.length - 1].replace('?', '')} ${label}`;
+    if (finalType.indexOf('?') === 0 && finalType.indexOf('|null') === -1) {
+      // If param is optional and this is not already set
+      finalType = `${finalType.replace('?', '')}|null`;
+    }
+
+    return `${finalType} ${label}`;
   });
 
   return showTypeState === 'type' ? filterOnlyTypeLabels(newArgs) : newArgs;
@@ -43,16 +69,19 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
     .getConfiguration('phpParameterHint')
     .get('collapseHintsWhenEqual');
   const hintTypeName = vscode.workspace.getConfiguration('phpParameterHint').get('hintTypeName');
-  const showTypeState = showTypeEnum[hintTypeName];
+  const showTypes = showTypeEnum[hintTypeName];
 
+  // If parameters group is memoized, simply return it
   if (functionGroup.name && functionDictionary.has(functionGroup.name)) {
     args = functionDictionary.get(functionGroup.name);
   } else {
+    // Regex to extract param name/type from function definition
     let regExDef;
 
-    if (showTypeState === 'disabled') {
+    if (showTypes === 'disabled') {
       regExDef = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
     } else {
+      // Capture the types as well
       regExDef = /(?<=\(?)([^,$]+\$[a-zA-Z0-9_]+)(?=.*\))/gims;
     }
 
@@ -66,24 +95,58 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
     if (signatureHelp) {
       [signature] = signatureHelp.signatures;
     }
+
+    // Regex to extract param name/type from function doc
+    let regExDoc;
+
+    if (showTypes === 'disabled') {
+      regExDoc = /(?<=@param_ )(?:.*?)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/;
+    } else {
+      // Capture the types as well
+      regExDoc = /(?<=@param_ )(([^$])+(\.\.\.)?($)?\$[a-zA-Z0-9_]+)/;
+    }
+
+    // Signature helper available
     if (signature && signature.parameters) {
       try {
-        let regEx;
-        if (showTypeState === "disabled") {
-          regEx = /(?<=@param_ )(?:.*?)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
-        } else {
-          regEx = /(?<=@param_ )(([^$])+(\.\.\.)?($)?\$[a-zA-Z0-9_]+)/gims;
-        }
         args = signature.parameters.map(parameter => {
+          /**
+           * If there is a phpDoc for the parameter, use it as the doc
+           * provides more types
+           */
           if (parameter.documentation && parameter.documentation.value) {
-            return new RegExp(regEx.source, 'gims').exec(parameter.documentation.value)[1].replace("`", "").trim();
-          }
-          return parameter.label;
-        })
-        if (showTypeState !== 'disabled') {
-          args = resolveTypeHint(showTypeState, args);
-        }
+            const docLabel = new RegExp(regExDoc.source, 'gims')
+              .exec(parameter.documentation.value)[1]
+              .replace('`', '')
+              .trim();
 
+            /**
+             * Doc wrongfully shows variadic param type as array so we remove it
+             */
+            return docLabel.indexOf('[]') !== -1 && docLabel.indexOf('...') !== -1
+              ? docLabel.replace('[]', '')
+              : docLabel;
+          }
+
+          // Fallback to label
+          const splittedLabel = parameter.label.split(' ');
+
+          if (showTypes === 'disabled') {
+            return splittedLabel[0];
+          }
+
+          /**
+           * For cases with default param, like: '$glue = ""',
+           * take only the param name
+           */
+          return splittedLabel[0].indexOf('$') !== -1
+            ? splittedLabel[0]
+            : splittedLabel.slice(0, 2).join(' ');
+        });
+
+        if (showTypes !== 'disabled') {
+          args = resolveTypeHint(showTypes, args);
+        }
       } catch (err) {
         printError(err);
       }
@@ -97,13 +160,6 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
           editor.document.uri,
           new vscode.Position(functionGroup.line, functionGroup.character)
         );
-        let regEx;
-
-        if (showTypeState === 'disabled') {
-          regEx = /(?<=@param_ )(?:.*?)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
-        } else {
-          regEx = /(?<=@param_ )(([^$])+(\.\.\.)?($)?\$[a-zA-Z0-9_]+)/gims;
-        }
 
         if (hoverCommand) {
           for (const hover of hoverCommand) {
@@ -117,11 +173,13 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
               }
 
               args = [
-                ...new Set(content.value.match(regEx).map(label => label.replace('`', '').trim()))
+                ...new Set(
+                  content.value.match(regExDoc).map(label => label.replace('`', '').trim())
+                )
               ];
 
-              if (showTypeState !== 'disabled') {
-                args = resolveTypeHint(showTypeState, args);
+              if (showTypes !== 'disabled') {
+                args = resolveTypeHint(showTypes, args);
               }
 
               // If no parameters annotations found, try a regEx that takes the
@@ -141,6 +199,7 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
       }
     }
 
+    // Memoise parameters group for this function
     if (functionGroup.name && args && args.length) {
       functionDictionary.set(functionGroup.name, args);
     }
@@ -151,26 +210,56 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
     let hasRestParameter = false;
     let restParameterIndex = -1;
     let restParameterName = '';
+    let restParameterType = '';
     const argsLength = args.length;
+    // If there is a rest parameter, set it's details
+    const setHasRest = (index, name, type = '') => {
+      hasRestParameter = true;
+      restParameterIndex = index;
+      restParameterName = name;
+      restParameterType = type;
+    };
 
-    /**
-     * @param {string} arg
-     * @param {number} index
-     */
     args = args.map((arg, index) => {
-      if (arg.substr(0, 3) === '...') {
-        hasRestParameter = true;
-        restParameterIndex = index;
-        restParameterName = arg.slice(3);
+      if (showTypes === 'disabled') {
+        if (isVariadic(arg)) {
+          setHasRest(index, getNameAfterVariadic(arg));
 
-        return `${arg.slice(3)}[0]`;
+          return `${restParameterName}[0]`;
+        }
+      } else {
+        let [type, name] = arg.split(' ');
+
+        if (!isDefined(name)) {
+          name = type;
+          type = '';
+        }
+
+        if (showTypes === 'type') {
+          if (isVariadic(name)) {
+            /**
+             * If the variadic params are set by reference,
+             * set it as param name to show the reference on the following params
+             */
+            const reference = name.indexOf('&') === 0 ? '&' : '';
+            setHasRest(index, reference, type);
+
+            return `${type ? `${type} ${reference}[0]` : ''}`;
+          }
+        } else if (isVariadic(name)) {
+          setHasRest(index, getNameAfterVariadic(name), type);
+
+          return `${type ? `${type} ` : ''}${restParameterName}[0]`;
+        }
       }
 
       return arg;
     });
 
+    args = args.filter(arg => arg !== '');
     let groupArgsCount = 0;
 
+    // Construct the final params hints
     for (
       let index = functionGroup.args[0].key;
       index < functionGroup.args[functionGroup.args.length - 1].key + 1;
@@ -192,9 +281,16 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
       // If key is bigger than the arguments length, check if there was a rest
       // parameter before and name it appropriately
       if (index >= argsLength) {
-        finalArg.name = `${restParameterName}[${index - restParameterIndex}]`;
+        finalArg.name = `${
+          showTypes === 'disabled' ? '' : `${restParameterType} `
+        }${restParameterName}[${index - restParameterIndex}]`;
       }
 
+      /**
+       * If collapse hints is enabled,
+       * don't show the parameter name if it matches
+       * with the variable name
+       */
       if (collapseHintsWhenEqual && groupArg.name) {
         const squareBracketIndex = finalArg.name.indexOf('[');
         const whereSquareBracket =

@@ -69,16 +69,24 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
     if (signatureHelp) {
       [signature] = signatureHelp.signatures;
     }
-
-    if (signature && signature.label) {
+    if (signature && signature.parameters) {
       try {
-        args = signature.label.match(regExDef).map((label) =>
-          label.trim().replace("(", "")
-        );
-
+        let regEx;
+        if (showTypeState === "disabled") {
+          regEx = /(?<=@param_ )(?:.*?)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/gims;
+        } else {
+          regEx = /(?<=@param_ )(([^$])+(\.\.\.)?($)?\$[a-zA-Z0-9_]+)/gims;
+        }
+        args = signature.parameters.map(parameter => {
+          if (parameter.documentation && parameter.documentation.value) {
+            return new RegExp(regEx.source, 'gims').exec(parameter.documentation.value)[1].replace("`", "").trim();
+          }
+          return parameter.label;
+        })
         if (showTypeState !== 'disabled') {
           args = resolveTypeHint(showTypeState, args);
         }
+
       } catch (err) {
         printError(err);
       }
@@ -108,7 +116,6 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
             if (args.length) {
               break;
             }
-
             for (const content of hover.contents) {
               if (args.length) {
                 break;
@@ -125,7 +132,7 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
               ];
 
               if (showTypeState !== 'disabled') {
-                args = resolveTypeHint(args);
+                args = resolveTypeHint(showTypeState, args);
               }
 
               // If no parameters annotations found, try a regEx that takes the

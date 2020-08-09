@@ -90,3 +90,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.3.1(09-08-2020)
 
 - Exclude unnecessary files
+
+## 0.3.2(09-08-2020)
+
+- Bundle extension

@@ -15,7 +15,7 @@ const showParamsOnceEvery = 100;
  * is bigger than slowAfterNrParam, then the update of the decorations will be
  * called once every showParamsOnceEvery
  *
- * Returns the decorations array or false if it was interrupted by another call
+ * When the function is called, the last call it's interrupted
  */
 function* update(activeEditor, functionGroups) {
   const argumentsLen = functionGroups.reduce((accumulator, currentGroup) => {

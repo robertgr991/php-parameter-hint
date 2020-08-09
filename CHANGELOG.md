@@ -76,3 +76,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.2.3(29-07-2020)
 
 - When available, use doc from signature help provider + some refactoring
+
+## 0.3.0(09-08-2020)
+
+- - Add command to collapse type and name when equal
+  - Add command to show full name of type(namespaces including)
+  - Use [js-coroutines](https://github.com/miketalbot/js-coroutines) to avoid
+    high CPU load
+  - Update php-parser version
+  - Simplify AST crawling
+  - Refactoring

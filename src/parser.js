@@ -33,161 +33,30 @@ class Parser {
    */
   parse(text) {
     this.functionGroups = [];
-    const parsedCode = this.parser.parseEval(removeShebang(text).replace('<?php', ''));
-    this.parseObject(parsedCode);
+    const astRoot = this.parser.parseEval(removeShebang(text).replace('<?php', ''));
+    this.crawl(astRoot);
   }
 
-  parseObject(obj) {
-    if (Array.isArray(obj)) {
-      obj.forEach(elem => {
-        this.parseObject(elem);
+  crawl(ast) {
+    if (['call', 'new'].includes(ast.kind)) {
+      try {
+        this.parseArguments(ast);
+        // eslint-disable-next-line no-empty
+      } catch (err) {}
+    }
+
+    try {
+      // eslint-disable-next-line no-unused-vars
+      Object.entries(ast).forEach(([_, node]) => {
+        if (node instanceof Object) {
+          try {
+            this.crawl(node);
+            // eslint-disable-next-line no-empty
+          } catch (err) {}
+        }
       });
-
-      return;
-    }
-
-    if (obj.kind) {
-      if (['call', 'new'].includes(obj.kind)) {
-        this.parseArguments(obj);
-      }
-
-      if (['function', 'method', 'catch', 'closure', 'arrowfunc'].includes(obj.kind)) {
-        obj.body && this.parseObject(obj.body);
-      }
-
-      if (['array'].includes(obj.kind)) {
-        if (obj.items) {
-          this.parseObject(obj.items);
-        }
-      }
-
-      if (['entry', 'yield'].includes(obj.kind)) {
-        obj.key && this.parseObject(obj.key);
-        obj.value && this.parseObject(obj.value);
-      }
-
-      if (['return', 'silent'].includes(obj.kind)) {
-        obj.expr && this.parseObject(obj.expr);
-      }
-
-      if (['expressionstatement'].includes(obj.kind)) {
-        if (Array.isArray(obj.expression)) {
-          this.parseObject(obj.expression);
-        } else {
-          obj.expression && obj.expression.left && this.parseObject(obj.expression.left);
-          obj.expression && obj.expression.right && this.parseObject(obj.expression.right);
-          obj.expression && !obj.expression.left && this.parseObject(obj.expression);
-        }
-      }
-
-      if (['include'].includes(obj.kind)) {
-        obj.target && this.parseObject(obj.target);
-      }
-
-      if (['assign'].includes(obj.kind)) {
-        obj.left && this.parseObject(obj.left);
-        obj.right && this.parseObject(obj.right);
-      }
-
-      if (['eval'].includes(obj.kind)) {
-        obj.source && this.parseObject(obj.source);
-      }
-
-      if (['isset', 'unset'].includes(obj.kind)) {
-        obj.variables && this.parseObject(obj.variables);
-      }
-
-      if (['bin'].includes(obj.kind)) {
-        obj.left && this.parseObject(obj.left);
-        obj.right && this.parseObject(obj.right);
-      }
-
-      if (['break', 'continue'].includes(obj.kind)) {
-        obj.level && this.parseObject(obj.level);
-      }
-
-      if (['switch', 'if', 'while', 'case', 'do'].includes(obj.kind)) {
-        obj.test && this.parseObject(obj.test);
-        obj.body && this.parseObject(obj.body);
-      }
-
-      if (['if'].includes(obj.kind)) {
-        obj.alternate && this.parseObject(obj.alternate);
-      }
-
-      if (['encapsed', 'nowdoc', 'yieldfrom'].includes(obj.kind)) {
-        obj.value && this.parseObject(obj.value);
-      }
-
-      if (['retif'].includes(obj.kind)) {
-        obj.test && this.parseObject(obj.test);
-        obj.trueExpr && this.parseObject(obj.trueExpr);
-        obj.falseExpr && this.parseObject(obj.falseExpr);
-      }
-
-      if (['program', 'block', 'namespace'].includes(obj.kind)) {
-        if (obj.children) {
-          this.parseObject(obj.children);
-        }
-      }
-
-      if (['foreach'].includes(obj.kind)) {
-        obj.source && this.parseObject(obj.source);
-        obj.body && this.parseObject(obj.body);
-      }
-
-      if (['echo'].includes(obj.kind)) {
-        obj.expressions && this.parseObject(obj.expressions);
-      }
-
-      if (['empty', 'print', 'encapsedpart'].includes(obj.kind)) {
-        obj.expression && this.parseObject(obj.expression);
-      }
-
-      if (['try'].includes(obj.kind)) {
-        obj.body && this.parseObject(obj.body);
-        obj.catches && this.parseObject(obj.catches);
-        obj.always && this.parseObject(obj.always);
-      }
-
-      if (['for'].includes(obj.kind)) {
-        if (Array.isArray(obj.init)) {
-          this.parseObject(obj.init);
-        } else {
-          obj.init && obj.init.left && this.parseObject(obj.init.left);
-          obj.init && obj.init.right && this.parseObject(obj.init.right);
-        }
-
-        obj.test && this.parseObject(obj.test);
-
-        if (Array.isArray(obj.increment)) {
-          this.parseObject(obj.increment);
-        } else {
-          obj.increment && obj.increment.left && this.parseObject(obj.increment.left);
-          obj.increment && obj.increment.right && this.parseObject(obj.increment.right);
-        }
-
-        obj.body && this.parseObject(obj.body);
-      }
-
-      if (['class', 'trait'].includes(obj.kind)) {
-        if (obj.body) {
-          this.parseObject(obj.body);
-        }
-      }
-
-      if (['exit'].includes(obj.kind)) {
-        if (Array.isArray(obj.status)) {
-          this.parseObject(obj.status);
-        } else {
-          obj.status && obj.status.left && this.parseObject(obj.status.left);
-          obj.status && obj.status.right && this.parseObject(obj.status.right);
-          obj.status && this.parseObject(obj.status);
-        }
-      }
-    }
-
-    obj.what && this.parseObject(obj.what);
+      // eslint-disable-next-line no-empty
+    } catch (err) {}
   }
 
   parseArguments(obj) {
@@ -205,7 +74,6 @@ class Parser {
 
     obj.arguments.forEach((arg, index) => {
       let argument = arg;
-      this.parseObject(argument);
 
       while (argument.kind === 'bin' && argument.left) {
         argument = argument.left;

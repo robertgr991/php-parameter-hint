@@ -1,4 +1,6 @@
+/* eslint-disable no-unused-expressions */
 const engine = require('php-parser');
+const { removeShebang } = require('./utils');
 
 class Parser {
   /**
@@ -6,7 +8,9 @@ class Parser {
    * @param {boolean} isPhp7
    */
   constructor(isPhp7 = true) {
-    this.phpFunctionGroups = [];
+    this.functionGroups = [];
+    // @ts-ignore
+    // eslint-disable-next-line new-cap
     this.parser = new engine({
       parser: {
         extractDoc: true,
@@ -25,12 +29,11 @@ class Parser {
   }
 
   /**
-   * PHP code without tags
-   * @param {string} code
+   * @param {string} text
    */
-  parse(code) {
-    this.phpFunctionGroups = [];
-    const parsedCode = this.parser.parseEval(code);
+  parse(text) {
+    this.functionGroups = [];
+    const parsedCode = this.parser.parseEval(removeShebang(text).replace('<?php', ''));
     this.parseObject(parsedCode);
   }
 
@@ -73,9 +76,7 @@ class Parser {
         } else {
           obj.expression && obj.expression.left && this.parseObject(obj.expression.left);
           obj.expression && obj.expression.right && this.parseObject(obj.expression.right);
-          obj.expression &&
-            !obj.expression.left &&
-            this.parseObject(obj.expression);
+          obj.expression && !obj.expression.left && this.parseObject(obj.expression);
         }
       }
 
@@ -191,7 +192,7 @@ class Parser {
 
   parseArguments(obj) {
     const expressionLoc = obj.what.offset ? obj.what.offset.loc.start : obj.what.loc.end;
-    const phpFunctionGroup = {
+    const functionGroup = {
       name: '',
       args: [],
       line: parseInt(expressionLoc.line, 10) - 1,
@@ -199,7 +200,7 @@ class Parser {
     };
 
     if (obj.what && obj.what.kind === 'classreference') {
-      phpFunctionGroup.name = obj.what.name;
+      functionGroup.name = obj.what.name;
     }
 
     obj.arguments.forEach((arg, index) => {
@@ -223,7 +224,7 @@ class Parser {
         argKind = 'null';
       }
 
-      phpFunctionGroup.args.push({
+      functionGroup.args.push({
         key: index,
         start: {
           line: parseInt(startLoc.line, 10) - 1,
@@ -238,8 +239,8 @@ class Parser {
       });
     });
 
-    if (phpFunctionGroup.args.length && obj.what && obj.what.kind !== 'variable') {
-      this.phpFunctionGroups.push(phpFunctionGroup);
+    if (functionGroup.args.length && obj.what && obj.what.kind !== 'variable') {
+      this.functionGroups.push(functionGroup);
     }
   }
 }

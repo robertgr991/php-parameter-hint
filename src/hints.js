@@ -1,4 +1,5 @@
 /* eslint-disable import/no-unresolved */
+// eslint-disable-next-line no-unused-vars
 const { ThemeColor, workspace, Range } = require('vscode');
 
 class Hints {

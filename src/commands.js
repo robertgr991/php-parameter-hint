@@ -64,7 +64,8 @@ class Commands {
       vscode.window.setStatusBarMessage(message, hideMessageAfterMs);
     });
 
-    // Command to enable/disable collapsing hints
+    // Command to enable/disable collapsing hints when param name is equal to
+    // variable name
     vscode.commands.registerCommand('phpParameterHint.toggleCollapse', () => {
       const currentState = vscode.workspace
         .getConfiguration('phpParameterHint')
@@ -74,6 +75,35 @@ class Commands {
       vscode.workspace
         .getConfiguration('phpParameterHint')
         .update('collapseHintsWhenEqual', !currentState, true);
+      vscode.window.setStatusBarMessage(message, hideMessageAfterMs);
+    });
+
+    // Command to enable/disable collapsing type and parameter name when hinting
+    // types is enabled and they are equal
+    vscode.commands.registerCommand('phpParameterHint.toggleCollapseType', () => {
+      const currentState = vscode.workspace
+        .getConfiguration('phpParameterHint')
+        .get('collapseTypeWhenEqual');
+      message = `${messageHeader} Collapse type and parameter name ${
+        currentState ? 'disabled' : 'enabled'
+      }`;
+
+      vscode.workspace
+        .getConfiguration('phpParameterHint')
+        .update('collapseTypeWhenEqual', !currentState, true);
+      vscode.window.setStatusBarMessage(message, hideMessageAfterMs);
+    });
+
+    // Show full type, including namespaces instead of the short name
+    vscode.commands.registerCommand('phpParameterHint.toggleFullType', () => {
+      const currentState = vscode.workspace
+        .getConfiguration('phpParameterHint')
+        .get('showFullType');
+      message = `${messageHeader} Show full type ${currentState ? 'disabled' : 'enabled'}`;
+
+      vscode.workspace
+        .getConfiguration('phpParameterHint')
+        .update('showFullType', !currentState, true);
       vscode.window.setStatusBarMessage(message, hideMessageAfterMs);
     });
   }

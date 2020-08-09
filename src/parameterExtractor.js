@@ -1,9 +1,10 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable import/no-unresolved */
 const vscode = require('vscode');
-const { printError } = require('./printer');
-const { sameNameSign, isDefined } = require('./utils');
+const { sameNamePlaceholder, isDefined } = require('./utils');
 const { showTypeEnum } = require('./commands');
+const signature = require('./providers/signature');
+const hover = require('./providers/hover');
 
 const isVariadic = label => label.substr(0, 3) === '...' || label.substr(0, 4) === '&...';
 
@@ -29,24 +30,49 @@ const filterOnlyTypeLabels = args =>
     })
     .filter(label => label !== '');
 
-const resolveTypeHint = (showTypeState, args) => {
+const resolveTypeHint = (showTypeState, args, showTypes) => {
   const newArgs = args.map(arg => {
-    const [type, label] = arg.split(' ');
+    // eslint-disable-next-line prefer-const
+    let [type, label] = arg.split(' ');
 
     if (!isDefined(label)) {
       return type;
     }
 
-    /**
-     * Keep only the short name of the type
-     * stripping away any namespace
-     */
-    const splittedType = type.split('\\');
-    let finalType = splittedType[splittedType.length - 1];
+    let finalType = type;
+    const showFullType = vscode.workspace.getConfiguration('phpParameterHint').get('showFullType');
 
-    if (finalType.indexOf('?') === 0 && finalType.indexOf('|null') === -1) {
+    if (!showFullType) {
+      /**
+       * Keep only the short name of the type
+       * stripping away any namespace
+       */
+      const splittedType = type.split('\\');
+      finalType = splittedType[splittedType.length - 1];
+    }
+
+    if (type.indexOf('?') === 0 && finalType.indexOf('|null') === -1) {
       // If param is optional and this is not already set
-      finalType = `${finalType.replace('?', '')}|null`;
+      finalType = `${finalType}|null`;
+    }
+
+    finalType = finalType.replace('?', '');
+
+    if (finalType[0] === '\\') {
+      finalType = finalType.slice(1);
+    }
+
+    const collapseTypeWhenEqual = vscode.workspace
+      .getConfiguration('phpParameterHint')
+      .get('collapseTypeWhenEqual');
+    const cleanLabel = label.slice(1); // without dollar sign
+
+    if (collapseTypeWhenEqual && finalType === cleanLabel) {
+      return showTypes === 'type' ? `${finalType} ${label}` : `${label}`;
+    }
+
+    if (finalType === cleanLabel) {
+      label = `$${label}`;
     }
 
     return `${finalType} ${label}`;
@@ -62,7 +88,7 @@ const resolveTypeHint = (showTypeState, args) => {
  * @param {Object} functionGroup
  * @param {vscode.TextEditor} editor
  */
-const getParamsNames = async (functionDictionary, functionGroup, editor) => {
+const getHints = async (functionDictionary, functionGroup, editor) => {
   const finalArgs = [];
   let args = [];
   const collapseHintsWhenEqual = vscode.workspace
@@ -75,128 +101,21 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
   if (functionGroup.name && functionDictionary.has(functionGroup.name)) {
     args = functionDictionary.get(functionGroup.name);
   } else {
-    // Regex to extract param name/type from function definition
-    let regExDef;
-
-    if (showTypes === 'disabled') {
-      regExDef = /(?<=\(.*)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)(?=.*\))/gims;
-    } else {
-      // Capture the types as well
-      regExDef = /(?<=\(?)([^,$]+\$[a-zA-Z0-9_]+)(?=.*\))/gims;
-    }
-
-    let signature;
-    const signatureHelp = await vscode.commands.executeCommand(
-      'vscode.executeSignatureHelpProvider',
-      editor.document.uri,
-      new vscode.Position(functionGroup.args[0].start.line, functionGroup.args[0].start.character)
+    // First try to get the args from the Signature provider
+    args = await signature.getArgs(
+      editor,
+      functionGroup.args[0].start.line,
+      functionGroup.args[0].start.character,
+      showTypes
     );
 
-    if (signatureHelp) {
-      [signature] = signatureHelp.signatures;
+    if (!args.length) {
+      // Fallback on Hover provider
+      args = await hover.getArgs(editor, functionGroup.line, functionGroup.character, showTypes);
     }
 
-    // Regex to extract param name/type from function doc
-    let regExDoc;
-
-    if (showTypes === 'disabled') {
-      regExDoc = /(?<=@param_ )(?:.*?)((\.\.\.)?(&)?\$[a-zA-Z0-9_]+)/;
-    } else {
-      // Capture the types as well
-      regExDoc = /(?<=@param_ )(([^$])+(\.\.\.)?($)?\$[a-zA-Z0-9_]+)/;
-    }
-
-    // Signature helper available
-    if (signature && signature.parameters) {
-      try {
-        args = signature.parameters.map(parameter => {
-          /**
-           * If there is a phpDoc for the parameter, use it as the doc
-           * provides more types
-           */
-          if (parameter.documentation && parameter.documentation.value) {
-            const docLabel = new RegExp(regExDoc.source, 'gims')
-              .exec(parameter.documentation.value)[1]
-              .replace('`', '')
-              .trim();
-
-            /**
-             * Doc wrongfully shows variadic param type as array so we remove it
-             */
-            return docLabel.indexOf('[]') !== -1 && docLabel.indexOf('...') !== -1
-              ? docLabel.replace('[]', '')
-              : docLabel;
-          }
-
-          // Fallback to label
-          const splittedLabel = parameter.label.split(' ');
-
-          if (showTypes === 'disabled') {
-            return splittedLabel[0];
-          }
-
-          /**
-           * For cases with default param, like: '$glue = ""',
-           * take only the param name
-           */
-          return splittedLabel[0].indexOf('$') !== -1
-            ? splittedLabel[0]
-            : splittedLabel.slice(0, 2).join(' ');
-        });
-
-        if (showTypes !== 'disabled') {
-          args = resolveTypeHint(showTypes, args);
-        }
-      } catch (err) {
-        printError(err);
-      }
-    } else {
-      // Fallback on hover command
-      let argsDef = [];
-
-      try {
-        const hoverCommand = await vscode.commands.executeCommand(
-          'vscode.executeHoverProvider',
-          editor.document.uri,
-          new vscode.Position(functionGroup.line, functionGroup.character)
-        );
-
-        if (hoverCommand) {
-          for (const hover of hoverCommand) {
-            if (args.length) {
-              break;
-            }
-
-            for (const content of hover.contents) {
-              if (args.length) {
-                break;
-              }
-
-              args = [
-                ...new Set(
-                  content.value.match(regExDoc).map(label => label.replace('`', '').trim())
-                )
-              ];
-
-              if (showTypes !== 'disabled') {
-                args = resolveTypeHint(showTypes, args);
-              }
-
-              // If no parameters annotations found, try a regEx that takes the
-              // parameters from the function definition in hover content
-              if (!argsDef.length) {
-                argsDef = [...new Set(content.value.match(regExDef))];
-              }
-            }
-          }
-
-          if (!args || !args.length) {
-            args = argsDef;
-          }
-        }
-      } catch (err) {
-        printError(err);
-      }
+    if (args.length && showTypes !== 'disabled') {
+      args = resolveTypeHint(showTypes, args, showTypes);
     }
 
     // Memoise parameters group for this function
@@ -300,7 +219,7 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
         if (finalArg.name.substring(dollarSignIndex + 1, whereSquareBracket) === groupArg.name) {
           finalArg.name =
             finalArg.name.substring(0, dollarSignIndex) +
-            sameNameSign +
+            sameNamePlaceholder +
             finalArg.name.substring(whereSquareBracket);
         }
       }
@@ -315,4 +234,4 @@ const getParamsNames = async (functionDictionary, functionGroup, editor) => {
   throw new Error('No arguments');
 };
 
-module.exports = getParamsNames;
+module.exports = getHints;

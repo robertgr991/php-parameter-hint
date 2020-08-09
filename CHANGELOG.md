@@ -86,3 +86,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   - Update php-parser version
   - Simplify AST crawling
   - Refactoring
+
+## 0.3.1(09-08-2020)
+
+- Exclude unnecessary files

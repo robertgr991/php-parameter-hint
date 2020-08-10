@@ -3,7 +3,6 @@ const vscode = require('vscode');
 const { singleton } = require('js-coroutines');
 const getHints = require('./parameterExtractor');
 const { printError } = require('./printer');
-const { sameNamePlaceholder } = require('./utils');
 const Hints = require('./hints');
 
 const hintDecorationType = vscode.window.createTextEditorDecorationType({});
@@ -23,41 +22,25 @@ function* update(activeEditor, functionGroups) {
   }, 0);
   let nrArgs = 0;
   const phpDecorations = [];
-  const collapseHintsWhenEqual = vscode.workspace
-    .getConfiguration('phpParameterHint')
-    .get('collapseHintsWhenEqual');
   const functionGroupsLen = functionGroups.length;
   const functionDictionary = new Map();
 
   for (let index = 0; index < functionGroupsLen; index += 1) {
     const functionGroup = functionGroups[index];
-    let args;
+    let hints;
 
     try {
-      args = yield getHints(functionDictionary, functionGroup, activeEditor).catch(err =>
+      hints = yield getHints(functionDictionary, functionGroup, activeEditor).catch(err =>
         printError(err)
       );
     } catch (err) {
       printError(err);
     }
 
-    if (args && args.length) {
+    if (hints && hints.length) {
       // eslint-disable-next-line no-restricted-syntax
-      for (const arg of args) {
-        let hint = '';
-
-        if (collapseHintsWhenEqual && arg.name.indexOf('$') === -1) {
-          if (arg.name === sameNamePlaceholder) {
-            // eslint-disable-next-line no-continue
-            continue;
-          } else {
-            hint = `${arg.name.replace(sameNamePlaceholder, '').trim()}:`;
-          }
-        } else {
-          hint = `${arg.name.replace('$', '').replace('& ', '&')}:`;
-        }
-
-        const decorationPHP = Hints.paramHint(hint, arg.range);
+      for (const hint of hints) {
+        const decorationPHP = Hints.paramHint(hint.text, hint.range);
         phpDecorations.push(decorationPHP);
         nrArgs += 1;
 

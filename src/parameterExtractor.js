@@ -6,12 +6,21 @@ const { showTypeEnum } = require('./commands');
 const signature = require('./providers/signature');
 const hover = require('./providers/hover');
 
-const isVariadic = label => label.substr(0, 3) === '...' || label.substr(0, 4) === '&...';
+const isVariadic = label =>
+  label.substr(0, 3) === '...' || label.substr(0, 4) === '&...' || label.substr(0, 4) === '$...';
 
-const getVariadic = label => (label.substr(0, 3) === '...' ? '...' : '&...');
+const getVariadic = label => {
+  if (label.substr(0, 3) === '...') return '...';
+  if (label.substr(0, 4) === '&...') return '&...';
+  return '$...';
+};
 
-const getNameAfterVariadic = label =>
-  label.substr(0, 3) === '...' ? label.slice(3) : label.replace('...', '');
+const getNameAfterVariadic = label => {
+  const nameAfterVariadic =
+    label.substr(0, 3) === '...' ? label.slice(3) : label.replace('...', '');
+
+  return nameAfterVariadic === '$' ? '' : nameAfterVariadic;
+};
 
 const filterOnlyTypeLabels = args =>
   args
@@ -23,7 +32,7 @@ const filterOnlyTypeLabels = args =>
          * Keep the splat operator for rest param even when
          * not showing param name to be able to correctly decorate the arguments
          */
-        return isVariadic(labels[1]) ? `${labels[0]} ${getVariadic(labels[1])}` : labels[0];
+        return isVariadic(labels[1]) ? `${labels[0]} ${getVariadic(labels[1])}`.trim() : labels[0];
       }
 
       return '';
@@ -67,7 +76,7 @@ const resolveTypeHint = (showTypeState, args, showTypes) => {
       .get('collapseTypeWhenEqual');
     const cleanLabel = label.slice(1); // without dollar sign
 
-    if (collapseTypeWhenEqual && finalType === cleanLabel) {
+    if (collapseTypeWhenEqual && label[0] === '$' && finalType === cleanLabel) {
       return showTypes === 'type' ? `${finalType} ${label}` : `${label}`;
     }
 
@@ -81,6 +90,18 @@ const resolveTypeHint = (showTypeState, args, showTypes) => {
   return showTypeState === 'type' ? filterOnlyTypeLabels(newArgs) : newArgs;
 };
 
+const createHintText = (arg, collapseHintsWhenEqual) => {
+  if (collapseHintsWhenEqual && arg.name.indexOf('$') === -1) {
+    if (arg.name === sameNamePlaceholder) {
+      return null;
+    }
+
+    return `${arg.name.replace(sameNamePlaceholder, '').trim()}:`;
+  }
+
+  return `${arg.name.replace('$', '').replace('& ', '&')}:`;
+};
+
 /**
  * Get the parameter name
  *
@@ -89,7 +110,7 @@ const resolveTypeHint = (showTypeState, args, showTypes) => {
  * @param {vscode.TextEditor} editor
  */
 const getHints = async (functionDictionary, functionGroup, editor) => {
-  const finalArgs = [];
+  const finalHints = [];
   let args = [];
   const collapseHintsWhenEqual = vscode.workspace
     .getConfiguration('phpParameterHint')
@@ -163,12 +184,13 @@ const getHints = async (functionDictionary, functionGroup, editor) => {
             const reference = name.indexOf('&') === 0 ? '&' : '';
             setHasRest(index, reference, type);
 
-            return `${type ? `${type} ${reference}[0]` : ''}`;
+            return `${type ? `${`${type} ${reference}`.trim()}[0]` : ''}`;
           }
         } else if (isVariadic(name)) {
           setHasRest(index, getNameAfterVariadic(name), type);
+          const argLabel = `${type ? `${type} ` : ''}${restParameterName}`.trim();
 
-          return `${type ? `${type} ` : ''}${restParameterName}[0]`;
+          return `${argLabel}[0]`;
         }
       }
 
@@ -200,9 +222,10 @@ const getHints = async (functionDictionary, functionGroup, editor) => {
       // If key is bigger than the arguments length, check if there was a rest
       // parameter before and name it appropriately
       if (index >= argsLength) {
-        finalArg.name = `${
+        const argLabel = `${
           showTypes === 'disabled' ? '' : `${restParameterType} `
-        }${restParameterName}[${index - restParameterIndex}]`;
+        }${restParameterName}`.trim();
+        finalArg.name = `${argLabel}[${index - restParameterIndex}]`;
       }
 
       /**
@@ -214,21 +237,32 @@ const getHints = async (functionDictionary, functionGroup, editor) => {
         const squareBracketIndex = finalArg.name.indexOf('[');
         const whereSquareBracket =
           squareBracketIndex === -1 ? finalArg.name.length : squareBracketIndex;
-        const dollarSignIndex = finalArg.name.indexOf('$');
+        const lastDollarSignIndex = finalArg.name.lastIndexOf('$');
+        const firstDollarSignIndex = finalArg.name.indexOf('$');
 
-        if (finalArg.name.substring(dollarSignIndex + 1, whereSquareBracket) === groupArg.name) {
+        if (
+          finalArg.name.substring(lastDollarSignIndex + 1, whereSquareBracket) === groupArg.name
+        ) {
           finalArg.name =
-            finalArg.name.substring(0, dollarSignIndex) +
+            finalArg.name.substring(0, firstDollarSignIndex) +
             sameNamePlaceholder +
             finalArg.name.substring(whereSquareBracket);
         }
       }
 
-      finalArgs.push(finalArg);
       groupArgsCount += 1;
+      const hintText = createHintText(finalArg, collapseHintsWhenEqual);
+
+      if (hintText !== null) {
+        const hint = {
+          text: hintText,
+          range: finalArg.range
+        };
+        finalHints.push(hint);
+      }
     }
 
-    return finalArgs;
+    return finalHints;
   }
 
   throw new Error('No arguments');

@@ -94,3 +94,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## 0.3.2(09-08-2020)
 
 - Bundle extension
+
+## 0.3.3(10-08-2020)
+
+- - Set border-radius of hints as configurable
+  - Set opacity of hints as configurable
+  - Move construction of final decoration text to `parameterExtractor.js`
+  - For variadic arguments, when showing only the type, don't show a space
+    between the type and index - show `mixed[0]` instead of `mixed [0]`

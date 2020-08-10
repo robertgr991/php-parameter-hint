@@ -15,6 +15,8 @@ Inserts parameter hints(type, name or both) into function calls to easily unders
 | `phpParameterHint.verticalPadding`        | Top and bottom padding of the hints(px)                                                                                                               | 1        |
 | `phpParameterHint.horizontalPadding`      | Right and left padding of the hints(px)                                                                                                               | 4        |
 | `phpParameterHint.fontWeight`             | Hints styling of font-weight CSS property                                                                                                             | "400"    |
+| `phpParameterHint.borderRadius`           | Hints styling of border-radius CSS property in px                                                                                                     | 5        |
+| `phpParameterHint.opacity`                | Hints styling of opacity CSS property                                                                                                                 | 0.4      |
 | `phpParameterHint.fontStyle`              | Hints styling of font-style CSS property                                                                                                              | "italic" |
 | `phpParameterHint.fontSize`               | Hints styling of font size CSS property                                                                                                               | 12       |
 | `phpParameterHint.onSave`                 | Create parameter hints on document save                                                                                                               | true     |

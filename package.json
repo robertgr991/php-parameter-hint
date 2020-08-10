@@ -2,7 +2,7 @@
   "name": "php-parameter-hint",
   "displayName": "PHP Parameter Hint",
   "description": "PHP parameter hint for VS Code",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publisher": "robertgr991",
   "engines": {
     "vscode": "^1.35.1"
@@ -122,6 +122,14 @@
             "type": "boolean",
             "description": "True if php version is 7.0+, false otherwise",
             "default": true
+          },
+          "phpParameterHint.opacity": {
+            "type": "number",
+            "default": 0.4
+          },
+          "phpParameterHint.borderRadius": {
+            "type": "number",
+            "default": 5
           },
           "phpParameterHint.fontWeight": {
             "type": "number",

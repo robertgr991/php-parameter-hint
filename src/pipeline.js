@@ -1,3 +1,5 @@
+const { isDefined } = require('./utils');
+
 /**
  * Pipeline class used to apply middlewares in a pipe style
  */
@@ -18,6 +20,8 @@ class Pipeline {
    */
   pipe(...steps) {
     steps.forEach(step => {
+      if (!isDefined(step)) return;
+
       let finalStep;
 
       if (Array.isArray(step)) {

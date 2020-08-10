@@ -21,7 +21,7 @@ class Pipeline {
       let finalStep;
 
       if (Array.isArray(step)) {
-        finalStep = [step[0], step.slice(1)];
+        finalStep = step;
       } else {
         finalStep = [step];
       }
@@ -39,9 +39,9 @@ class Pipeline {
    */
   async process(value) {
     let currentValue = value;
-    this.steps.forEach(async ([step, ...additionalArgs]) => {
+    for (const [step, ...additionalArgs] of this.steps) {
       currentValue = await step(currentValue, ...additionalArgs);
-    });
+    }
 
     return currentValue;
   }

@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 // eslint-disable-next-line import/no-unresolved
 const vscode = require('vscode');
 const { printError } = require('../printer');

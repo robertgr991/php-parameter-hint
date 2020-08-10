@@ -38,7 +38,6 @@ function* update(activeEditor, functionGroups) {
     }
 
     if (hints && hints.length) {
-      // eslint-disable-next-line no-restricted-syntax
       for (const hint of hints) {
         const decorationPHP = Hints.paramHint(hint.text, hint.range);
         phpDecorations.push(decorationPHP);

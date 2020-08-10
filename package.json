@@ -2,7 +2,7 @@
   "name": "php-parameter-hint",
   "displayName": "PHP Parameter Hint",
   "description": "PHP parameter hint for VS Code",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "publisher": "robertgr991",
   "engines": {
     "vscode": "^1.35.1"
@@ -238,8 +238,8 @@
     ]
   },
   "scripts": {
+    "test": "ava",
     "lint": "eslint .",
-    "pretest": "npm run lint",
     "vscode:prepublish": "webpack --mode production",
     "webpack": "webpack --mode development",
     "webpack-dev": "webpack --mode development --watch"
@@ -247,8 +247,10 @@
   "devDependencies": {
     "@types/node": "^12.11.7",
     "@types/vscode": "^1.35.0",
+    "ava": "^3.11.1",
     "eslint": "^7.5.0",
     "minimist": ">=1.2.2",
+    "sinon": "^9.0.2",
     "vscode-test": "^1.3.0",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"

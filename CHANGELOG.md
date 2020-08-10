@@ -102,3 +102,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   - Move construction of final decoration text to `parameterExtractor.js`
   - For variadic arguments, when showing only the type, don't show a space
     between the type and index - show `mixed[0]` instead of `mixed [0]`
+
+## 0.3.4(10-08-2020)
+
+- Fix middlewares and pipeline

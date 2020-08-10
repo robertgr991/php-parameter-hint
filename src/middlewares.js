@@ -16,9 +16,12 @@ const literals = [
 // Keep only arguments that are literals
 const onlyLiterals = functionGroups => {
   if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLiterals')) {
-    return functionGroups.filter(
-      functionGroup => functionGroup.args.filter(arg => literals.includes(arg.kind)).length > 0
-    );
+    return functionGroups.filter(functionGroup => {
+      // eslint-disable-next-line no-param-reassign
+      functionGroup.args = functionGroup.args.filter(arg => literals.includes(arg.kind));
+
+      return functionGroup.args.length > 0;
+    });
   }
 
   return functionGroups;
@@ -77,7 +80,12 @@ const onlySelection = (functionGroups, activeEditor) => {
         callback = isInSelection(currentSelection);
       }
 
-      return functionGroups.filter(functionGroup => functionGroup.args.filter(callback).length > 0);
+      return functionGroups.filter(functionGroup => {
+        // eslint-disable-next-line no-param-reassign
+        functionGroup.args = functionGroup.args.filter(callback);
+
+        return functionGroup.args.length > 0;
+      });
     }
   }
 

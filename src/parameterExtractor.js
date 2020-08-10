@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 /* eslint-disable import/no-unresolved */
 const vscode = require('vscode');
 const { sameNamePlaceholder, isDefined } = require('./utils');

@@ -1,6 +1,3 @@
-// eslint-disable-next-line import/no-unresolved
-const vscode = require('vscode');
-
 const literals = [
   'boolean',
   'number',
@@ -14,8 +11,8 @@ const literals = [
 ];
 
 // Keep only arguments that are literals
-const onlyLiterals = functionGroups => {
-  if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLiterals')) {
+const onlyLiterals = (functionGroups, shouldApply) => {
+  if (shouldApply) {
     return functionGroups.filter(functionGroup => {
       // eslint-disable-next-line no-param-reassign
       functionGroup.args = functionGroup.args.filter(arg => literals.includes(arg.kind));
@@ -60,8 +57,8 @@ const isInSelection = currentSelection => argument => {
 };
 
 // Keep only arguments in current line/selection
-const onlySelection = (functionGroups, activeEditor) => {
-  if (vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')) {
+const onlySelection = (functionGroups, activeEditor, shouldApply) => {
+  if (shouldApply) {
     const currentSelection = activeEditor.selection;
     let callback;
 

@@ -60,7 +60,17 @@ function activate(context) {
     }
 
     const finalFunctionGroups = await new Pipeline()
-      .pipe(onlyLiterals, [onlySelection, activeEditor])
+      .pipe(
+        [
+          onlyLiterals,
+          vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLiterals')
+        ],
+        [
+          onlySelection,
+          activeEditor,
+          vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')
+        ]
+      )
       .process(functionGroups);
     await update(activeEditor, finalFunctionGroups);
   }

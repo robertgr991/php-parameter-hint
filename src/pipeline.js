@@ -37,14 +37,27 @@ class Pipeline {
   }
 
   /**
+   * Clear existing pipes
+   */
+  clear() {
+    this.steps = [];
+    return this;
+  }
+
+  /**
    * The value to be processed by the pipeline
    *
    * @param {any} value
+   * @param {boolean} clearAfter the pipes after computing the value
    */
-  async process(value) {
+  async process(value, clearAfter = false) {
     let currentValue = value;
     for (const [step, ...additionalArgs] of this.steps) {
       currentValue = await step(currentValue, ...additionalArgs);
+    }
+
+    if (clearAfter) {
+      this.clear();
     }
 
     return currentValue;

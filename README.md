@@ -30,19 +30,21 @@ Inserts parameter hints(type, name or both) into function calls to easily unders
 | `phpParameterHint.showFullType`           | Show full type, including namespaces instead of the short name                                                                                        | false    |
 | `phpParameterHint.hintOnlyLiterals`       | Show hints only for literals                                                                                                                          | false    |
 | `phpParameterHint.hintOnlyLine`           | Show hints only for current line/selection                                                                                                            | false    |
+| `phpParameterHint.hintOnlyVisibleRanges`  | Show hints only for visible ranges                                                                                                                    | false    |
 | `phpParameterHint.hintTypeName`           | Hint only name(0 - default) / Hint type and name(1) / Hint type(2)                                                                                    | 0        |
 
 ## Commands
 
-| Name                                  | Description                                                 | SHORTCUT                        |
-| ------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
-| `phpParameterHint.toggle`             | Hide / Show Hints                                           | Key: CTRL + K H, Mac: CMD + K H |
-| `phpParameterHint.toggleLiterals`     | Hide / Show Hints only for literals                         | Key: CTRL + K L, Mac: CMD + K L |
-| `phpParameterHint.toggleLine`         | Hide / Show Hints only for current line/selection           | Key: CTRL + K I, Mac: CMD + K I |
-| `phpParameterHint.toggleCollapse`     | Hide / Show Hints when variable name matches parameter name | Key: CTRL + K C, Mac: CMD + K C |
-| `phpParameterHint.toggleTypeName`     | Hint name(default), type and name or only type              | Key: CTRL + K T, Mac: CMD + K T |
-| `phpParameterHint.toggleCollapseType` | Toggle collapsing type and name when they are equal         | Key: CTRL + K Y, Mac: CMD + K Y |
-| `phpParameterHint.toggleFullType`     | Hint / Show full type name(namespaces including)            | Key: CTRL + K U, Mac: CMD + K U |
+| Name                                   | Description                                                 | SHORTCUT                        |
+| -------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
+| `phpParameterHint.toggle`              | Hide / Show Hints                                           | Key: CTRL + K H, Mac: CMD + K H |
+| `phpParameterHint.toggleLiterals`      | Hide / Show Hints only for literals                         | Key: CTRL + K L, Mac: CMD + K L |
+| `phpParameterHint.toggleLine`          | Hide / Show Hints only for current line/selection           | Key: CTRL + K I, Mac: CMD + K I |
+| `phpParameterHint.toggleCollapse`      | Hide / Show Hints when variable name matches parameter name | Key: CTRL + K C, Mac: CMD + K C |
+| `phpParameterHint.toggleTypeName`      | Hint name(default), type and name or only type              | Key: CTRL + K T, Mac: CMD + K T |
+| `phpParameterHint.toggleCollapseType`  | Toggle collapsing type and name when they are equal         | Key: CTRL + K Y, Mac: CMD + K Y |
+| `phpParameterHint.toggleFullType`      | Hide / Show full type name(namespaces including)            | Key: CTRL + K U, Mac: CMD + K U |
+| `phpParameterHint.toggleVisibleRanges` | Hide / Show Hints only in visible ranges                    | Key: CTRL + K R, Mac: CMD + K R |
 
 ## Colors
 

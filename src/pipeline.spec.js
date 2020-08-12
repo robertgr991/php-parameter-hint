@@ -1,9 +1,9 @@
-const test = require('ava');
+const test = require('ava').default;
 const { Pipeline } = require('./pipeline');
 
-// @ts-ignore
+const double = x => x * 2;
+
 test('with pipes', async t => {
-  const double = x => x * 2;
   const addAsync = async (x, toAdd) => x + toAdd;
   const negateAsync = x => new Promise(resolve => setTimeout(() => resolve(-x), 1));
   const pipeline = new Pipeline();
@@ -13,7 +13,6 @@ test('with pipes', async t => {
   t.is(result, expected);
 });
 
-// @ts-ignore
 test('without pipes', async t => {
   let pipeline = new Pipeline();
   const initial = 1;
@@ -24,4 +23,17 @@ test('without pipes', async t => {
   pipeline = new Pipeline();
   result = await pipeline.pipe(undefined).process(initial);
   t.is(result, expected);
+});
+
+test('clear pipes', async t => {
+  const pipeline = new Pipeline();
+  const initial = 1;
+  let result = await pipeline
+    .pipe(double)
+    .clear()
+    .process(initial);
+  t.is(result, initial);
+  await pipeline.pipe(double).process(initial, true);
+  result = await pipeline.process(initial);
+  t.is(result, initial);
 });

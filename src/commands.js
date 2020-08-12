@@ -64,6 +64,21 @@ class Commands {
       vscode.window.setStatusBarMessage(message, hideMessageAfterMs);
     });
 
+    // Command to enable/disable hinting only visible ranges
+    vscode.commands.registerCommand('phpParameterHint.toggleVisibleRanges', () => {
+      const currentState = vscode.workspace
+        .getConfiguration('phpParameterHint')
+        .get('hintOnlyVisibleRanges');
+      message = `${messageHeader} Hint only visible ranges ${
+        currentState ? 'disabled' : 'enabled'
+      }`;
+
+      vscode.workspace
+        .getConfiguration('phpParameterHint')
+        .update('hintOnlyVisibleRanges', !currentState, true);
+      vscode.window.setStatusBarMessage(message, hideMessageAfterMs);
+    });
+
     // Command to enable/disable collapsing hints when param name is equal to
     // variable name
     vscode.commands.registerCommand('phpParameterHint.toggleCollapse', () => {

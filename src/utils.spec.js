@@ -1,14 +1,12 @@
-const test = require('ava');
+const test = require('ava').default;
 const { isDefined, removeShebang } = require('./utils');
 
-// @ts-ignore
 test('isDefined', t => {
   const hint = 'user:';
   t.is(isDefined(undefined), false);
   t.is(isDefined(hint), true);
 });
 
-// @ts-ignore
 test('removeShebang', t => {
   const withShebang = {
     input: `#!\n<?php\necho 'test';`,

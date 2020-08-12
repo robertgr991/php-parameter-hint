@@ -1,3 +1,7 @@
+// eslint-disable-next-line import/no-unresolved
+const { Position, Range } = require('vscode');
+
+/* eslint-disable no-param-reassign */
 const literals = [
   'boolean',
   'number',
@@ -12,16 +16,15 @@ const literals = [
 
 // Keep only arguments that are literals
 const onlyLiterals = (functionGroups, shouldApply) => {
-  if (shouldApply) {
-    return functionGroups.filter(functionGroup => {
-      // eslint-disable-next-line no-param-reassign
-      functionGroup.args = functionGroup.args.filter(arg => literals.includes(arg.kind));
-
-      return functionGroup.args.length > 0;
-    });
+  if (!shouldApply) {
+    return functionGroups;
   }
 
-  return functionGroups;
+  return functionGroups.filter(functionGroup => {
+    functionGroup.args = functionGroup.args.filter(arg => literals.includes(arg.kind));
+
+    return functionGroup.args.length > 0;
+  });
 };
 
 const isInSelection = currentSelection => argument => {
@@ -58,35 +61,69 @@ const isInSelection = currentSelection => argument => {
 
 // Keep only arguments in current line/selection
 const onlySelection = (functionGroups, activeEditor, shouldApply) => {
-  if (shouldApply) {
-    const currentSelection = activeEditor.selection;
-    let callback;
+  if (!shouldApply) {
+    return functionGroups;
+  }
 
-    if (currentSelection) {
-      if (currentSelection.isEmpty) {
-        const lines = [];
+  const currentSelection = activeEditor.selection;
+  let callback;
 
-        activeEditor.selections.forEach(selection => {
-          if (selection.isEmpty) {
-            lines.push(selection.start.line);
-          }
-        });
+  if (currentSelection) {
+    if (currentSelection.isEmpty) {
+      const lines = [];
 
-        callback = argument => lines.includes(argument.start.line);
-      } else {
-        callback = isInSelection(currentSelection);
-      }
-
-      return functionGroups.filter(functionGroup => {
-        // eslint-disable-next-line no-param-reassign
-        functionGroup.args = functionGroup.args.filter(callback);
-
-        return functionGroup.args.length > 0;
+      activeEditor.selections.forEach(selection => {
+        if (selection.isEmpty) {
+          lines.push(selection.start.line);
+        }
       });
+
+      callback = argument => lines.includes(argument.start.line);
+    } else {
+      callback = isInSelection(currentSelection);
     }
+
+    return functionGroups.filter(functionGroup => {
+      functionGroup.args = functionGroup.args.filter(callback);
+
+      return functionGroup.args.length > 0;
+    });
   }
 
   return functionGroups;
 };
 
-module.exports = { onlyLiterals, onlySelection };
+const onlyVisibleRanges = (functionGroups, activeEditor, shouldApply) => {
+  if (!shouldApply) {
+    return functionGroups;
+  }
+
+  const maxLine = activeEditor.document.lineCount - 1;
+  const topAndBottomLinesMargin = 50;
+  return functionGroups.filter(functionGroup => {
+    functionGroup.args = functionGroup.args.filter(arg => {
+      const { visibleRanges } = activeEditor;
+
+      for (const range of visibleRanges) {
+        const argRange = new Range(
+          new Position(arg.start.line, arg.start.character),
+          new Position(arg.end.line, arg.end.character)
+        );
+        const checkRange = range.with(
+          range.start.with(Math.max(range.start.line - topAndBottomLinesMargin, 0)),
+          range.end.with(Math.min(range.end.line + topAndBottomLinesMargin, maxLine))
+        );
+
+        if (checkRange.contains(argRange)) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+
+    return functionGroup.args.length > 0;
+  });
+};
+
+module.exports = { onlyLiterals, onlySelection, onlyVisibleRanges };

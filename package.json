@@ -2,7 +2,7 @@
   "name": "php-parameter-hint",
   "displayName": "PHP Parameter Hint",
   "description": "PHP parameter hint for VS Code",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "publisher": "robertgr991",
   "engines": {
     "vscode": "^1.35.1"
@@ -52,6 +52,10 @@
       {
         "command": "phpParameterHint.toggleFullType",
         "title": "PHP Parameter Hint: Toggle showing full type instead of short name"
+      },
+      {
+        "command": "phpParameterHint.toggleVisibleRanges",
+        "title": "PHP Parameter Hint: Hide / Show Hints only in visible ranges"
       }
     ],
     "configuration": [
@@ -116,6 +120,11 @@
           "phpParameterHint.hintOnlyLine": {
             "type": "boolean",
             "description": "Show hints only for current line",
+            "default": false
+          },
+          "phpParameterHint.hintOnlyVisibleRanges": {
+            "type": "boolean",
+            "description": "Show hints only for visibleRanges",
             "default": false
           },
           "phpParameterHint.php7": {
@@ -234,6 +243,11 @@
         "command": "phpParameterHint.toggleFullType",
         "key": "ctrl+k u",
         "mac": "cmd+k u"
+      },
+      {
+        "command": "phpParameterHint.toggleVisibleRanges",
+        "key": "ctrl+k r",
+        "mac": "cmd+k r"
       }
     ]
   },
@@ -257,7 +271,11 @@
     "webpack-cli": "^3.3.12"
   },
   "dependencies": {
+    "fast-copy": "^2.1.0",
     "js-coroutines": "^2.4.5",
+    "lodash.debounce": "^4.0.8",
+    "lzutf8": "^0.5.6",
+    "node-cache": "^5.1.2",
     "php-parser": "^3.0.1"
   },
   "extensionDependencies": [

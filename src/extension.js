@@ -1,11 +1,13 @@
 // eslint-disable-next-line import/no-unresolved
 const vscode = require('vscode');
+const debounce = require('lodash.debounce');
 const { Commands } = require('./commands');
 const Parser = require('./parser');
 const { printError } = require('./printer');
 const { update } = require('./update');
-const { onlyLiterals, onlySelection } = require('./middlewares');
+const { onlyLiterals, onlySelection, onlyVisibleRanges } = require('./middlewares');
 const { Pipeline } = require('./pipeline');
+const { CacheService } = require('./cache');
 
 const hintDecorationType = vscode.window.createTextEditorDecorationType({});
 const initialNrTries = 3;
@@ -17,15 +19,20 @@ const initialNrTries = 3;
 function activate(context) {
   let timeout;
   let activeEditor = vscode.window.activeTextEditor;
+  const cacheService = new CacheService();
 
   /**
    * Get the PHP code then parse it and create parameter hints
    */
   async function updateDecorations() {
+    timeout = undefined;
+
     if (!activeEditor || !activeEditor.document || activeEditor.document.languageId !== 'php') {
       return;
     }
 
+    const { document: currentDocument } = activeEditor;
+    const uriStr = currentDocument.uri.toString();
     const isEnabled = vscode.workspace.getConfiguration('phpParameterHint').get('enabled');
 
     if (!isEnabled) {
@@ -34,42 +41,51 @@ function activate(context) {
       return;
     }
 
-    const text = activeEditor.document.getText();
+    const text = currentDocument.getText();
     let functionGroups = [];
+    const hintOnChange = vscode.workspace.getConfiguration('phpParameterHint').get('onChange');
+    const hintOnlyLine = vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine');
+    const hintOnlyLiterals = vscode.workspace
+      .getConfiguration('phpParameterHint')
+      .get('hintOnlyLiterals');
+    let hintOnlyVisibleRanges = vscode.workspace
+      .getConfiguration('phpParameterHint')
+      .get('hintOnlyVisibleRanges');
 
     try {
-      const isPhp7 = vscode.workspace.getConfiguration('phpParameterHint').get('php7');
-      const parser = new Parser(isPhp7);
-      parser.parse(text);
-      functionGroups = parser.functionGroups;
+      if (await cacheService.isCachedTextValid(uriStr, text)) {
+        functionGroups = cacheService.getFunctionGroups(uriStr);
+      } else {
+        cacheService.deleteFunctionGroups(uriStr);
+        const isPhp7 = vscode.workspace.getConfiguration('phpParameterHint').get('php7');
+        const parser = new Parser(isPhp7);
+        parser.parse(text);
+        functionGroups = parser.functionGroups;
+        await cacheService.setFunctionGroups(uriStr, text, functionGroups);
+      }
     } catch (err) {
       printError(err);
 
-      if (
-        vscode.workspace.getConfiguration('phpParameterHint').get('onChange') ||
-        vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')
-      ) {
+      if (hintOnChange || hintOnlyLine) {
         return;
       }
     }
 
-    if (functionGroups.length === 0) {
+    if (!functionGroups.length) {
       activeEditor.setDecorations(hintDecorationType, []);
 
       return;
     }
 
+    if (!hintOnlyVisibleRanges && functionGroups.length >= 150) {
+      hintOnlyVisibleRanges = true;
+    }
+
     const finalFunctionGroups = await new Pipeline()
       .pipe(
-        [
-          onlyLiterals,
-          vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLiterals')
-        ],
-        [
-          onlySelection,
-          activeEditor,
-          vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyLine')
-        ]
+        [onlyLiterals, hintOnlyLiterals],
+        [onlyVisibleRanges, activeEditor, hintOnlyVisibleRanges],
+        [onlySelection, activeEditor, hintOnlyLine]
       )
       .process(functionGroups);
     await update(activeEditor, finalFunctionGroups);
@@ -86,7 +102,7 @@ function activate(context) {
       timeout = undefined;
     }
 
-    timeout = setTimeout(() => updateDecorations(), delay);
+    timeout = setTimeout(updateDecorations, delay);
   }
 
   /**
@@ -121,13 +137,25 @@ function activate(context) {
   vscode.window.onDidChangeActiveTextEditor(
     editor => {
       activeEditor = editor;
-
       if (activeEditor) {
         triggerUpdateDecorations(
           vscode.workspace.getConfiguration('phpParameterHint').get('textEditorChangeDelay')
         );
       }
     },
+    null,
+    context.subscriptions
+  );
+  const handleVisibleRangesChange = debounce(() => {
+    if (
+      activeEditor &&
+      vscode.workspace.getConfiguration('phpParameterHint').get('hintOnlyVisibleRanges')
+    ) {
+      triggerUpdateDecorations(0);
+    }
+  }, 333);
+  vscode.window.onDidChangeTextEditorVisibleRanges(
+    handleVisibleRangesChange,
     null,
     context.subscriptions
   );
@@ -159,8 +187,12 @@ function activate(context) {
     context.subscriptions
   );
   vscode.workspace.onDidSaveTextDocument(
-    () => {
-      if (activeEditor && vscode.workspace.getConfiguration('phpParameterHint').get('onSave')) {
+    document => {
+      if (
+        activeEditor &&
+        activeEditor.document === document &&
+        vscode.workspace.getConfiguration('phpParameterHint').get('onSave')
+      ) {
         triggerUpdateDecorations(
           vscode.workspace.getConfiguration('phpParameterHint').get('saveDelay')
         );

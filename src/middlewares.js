@@ -109,6 +109,7 @@ const onlyVisibleRanges = (functionGroups, activeEditor, shouldApply) => {
           new Position(arg.start.line, arg.start.character),
           new Position(arg.end.line, arg.end.character)
         );
+        // Derive a new range with the added lines margin
         const checkRange = range.with(
           range.start.with(Math.max(range.start.line - topAndBottomLinesMargin, 0)),
           range.end.with(Math.min(range.end.line + topAndBottomLinesMargin, maxLine))

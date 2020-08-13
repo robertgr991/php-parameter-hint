@@ -18,10 +18,17 @@ class CacheService {
     });
   }
 
+  /**
+   * Cache the function groups per uri
+   *
+   * @param {string} uri
+   * @param {string} text
+   * @param {array} functionGroups
+   */
   setFunctionGroups(uri, text, functionGroups) {
     return new Promise(resolve => {
       LZUTF8.compressAsync(text, undefined, (result, error) => {
-        if (isDefined(error)) {
+        if (isDefined(error) || !isDefined(result)) {
           // Fail silently without adding the data to cache
           resolve();
           return;
@@ -37,6 +44,10 @@ class CacheService {
     });
   }
 
+  /**
+   *
+   * @param {string} uri
+   */
   getFunctionGroups(uri) {
     const { functionGroups } = this.cache.get(uri);
 
@@ -49,6 +60,10 @@ class CacheService {
     return [];
   }
 
+  /**
+   *
+   * @param {string} uri
+   */
   deleteFunctionGroups(uri) {
     this.cache.del(uri);
   }

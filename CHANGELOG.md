@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.4.1] - 13-08-2020
+
+### Fixed
+
+- Add missing `resolve` when there is an error while compressing the text.
+
 ## [0.4.0] - 13-08-2020
 
 ### Added

@@ -23,6 +23,7 @@ class CacheService {
       LZUTF8.compressAsync(text, undefined, (result, error) => {
         if (isDefined(error)) {
           // Fail silently without adding the data to cache
+          resolve();
           return;
         }
 

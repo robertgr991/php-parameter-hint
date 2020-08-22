@@ -98,8 +98,6 @@ const onlyVisibleRanges = (functionGroups, activeEditor, shouldApply) => {
     return functionGroups;
   }
 
-  const maxLine = activeEditor.document.lineCount - 1;
-  const topAndBottomLinesMargin = 50;
   return functionGroups.filter(functionGroup => {
     functionGroup.args = functionGroup.args.filter(arg => {
       const { visibleRanges } = activeEditor;
@@ -109,13 +107,8 @@ const onlyVisibleRanges = (functionGroups, activeEditor, shouldApply) => {
           new Position(arg.start.line, arg.start.character),
           new Position(arg.end.line, arg.end.character)
         );
-        // Derive a new range with the added lines margin
-        const checkRange = range.with(
-          range.start.with(Math.max(range.start.line - topAndBottomLinesMargin, 0)),
-          range.end.with(Math.min(range.end.line + topAndBottomLinesMargin, maxLine))
-        );
 
-        if (checkRange.contains(argRange)) {
+        if (range.contains(argRange)) {
           return true;
         }
       }

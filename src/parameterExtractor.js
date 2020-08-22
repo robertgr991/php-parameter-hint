@@ -79,10 +79,6 @@ const resolveTypeHint = (showTypeState, args, showTypes) => {
       return showTypes === 'type' ? `${finalType} ${label}` : `${label}`;
     }
 
-    if (finalType === cleanLabel) {
-      label = `$${label}`;
-    }
-
     return `${finalType} ${label}`;
   });
 
@@ -98,7 +94,11 @@ const createHintText = (arg, collapseHintsWhenEqual) => {
     return `${arg.name.replace(sameNamePlaceholder, '').trim()}:`;
   }
 
-  return `${arg.name.replace('$', '').replace('& ', '&')}:`;
+  const showDollarSign = vscode.workspace
+    .getConfiguration('phpParameterHint')
+    .get('showDollarSign');
+
+  return `${arg.name.replace('$', showDollarSign ? '$' : '').replace('& ', '&')}:`;
 };
 
 /**

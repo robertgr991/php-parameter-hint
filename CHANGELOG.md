@@ -1,5 +1,31 @@
 # Change Log
 
+## [0.5.0] - 22-08-2020
+
+### Added
+
+- Commands to toggle hinting on text change/document save
+- Command to toggle showing `$` before parameter name
+- Integration tests in vscode environment
+- More unit tests
+- `FunctionGroupsFacade`
+
+### Fixed
+
+- RegExp for getting parameter names and types from function definition
+- Hover provider when using the documentation RegExp
+- Parser when there are only short opening tags or when there is only PHP
+  embedded in HTML
+- Bug when show only visible ranges was forced only locally before `update` it's called
+
+### Changed
+
+- `update` returns the decorations, for testing purposes
+
+### Removed
+
+- Remove margin for visible ranges middleware
+
 ## [0.4.1] - 13-08-2020
 
 ### Fixed

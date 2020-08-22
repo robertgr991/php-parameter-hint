@@ -1,21 +1,25 @@
 const LZUTF8 = require('lzutf8');
 const NodeCache = require('node-cache');
-const copy = require('fast-copy').default;
-const { isDefined } = require('./utils');
+const { isDefined, getCopyFunc } = require('./utils');
 
-const cacheTimeInSecs = 60 * 10; // 10 min
-const checkIntervalInSecs = 60 * 1; // 1 min
+const copy = getCopyFunc();
 
 /**
  * Cache service for functions groups per uri
  */
 class CacheService {
-  constructor() {
+  constructor(cacheTimeInSecs = 60 * 10, checkIntervalInSecs = 60 * 1) {
+    this.cacheTimeInSecs = cacheTimeInSecs;
     this.cache = new NodeCache({
       stdTTL: cacheTimeInSecs,
       checkperiod: checkIntervalInSecs,
       useClones: false
     });
+  }
+
+  // Remove all cached data
+  removeAll() {
+    this.cache.flushAll();
   }
 
   /**
@@ -36,6 +40,7 @@ class CacheService {
 
         const data = {
           compressedText: result,
+          // @ts-ignore
           functionGroups: copy(functionGroups)
         };
         this.cache.set(uri, data);
@@ -49,12 +54,13 @@ class CacheService {
    * @param {string} uri
    */
   getFunctionGroups(uri) {
-    const { functionGroups } = this.cache.get(uri);
+    const cachedData = this.cache.get(uri);
 
-    if (isDefined(functionGroups)) {
+    if (isDefined(cachedData) && isDefined(cachedData.functionGroups)) {
       // If key exists, refresh TTL
-      this.cache.ttl(uri, cacheTimeInSecs);
-      return copy(functionGroups);
+      this.cache.ttl(uri, this.cacheTimeInSecs);
+      // @ts-ignore
+      return copy(cachedData.functionGroups);
     }
 
     return [];

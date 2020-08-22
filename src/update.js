@@ -57,8 +57,9 @@ function* update(activeEditor, functionGroups) {
 
   yield;
   activeEditor.setDecorations(hintDecorationType, phpDecorations);
+  return phpDecorations;
 }
 
 module.exports = {
-  update: singleton(update)
+  update: singleton(update, null)
 };

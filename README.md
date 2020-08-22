@@ -32,12 +32,15 @@ Inserts parameter hints(type, name or both) into function calls to easily unders
 | `phpParameterHint.hintOnlyLine`           | Show hints only for current line/selection                                                                                                            | false    |
 | `phpParameterHint.hintOnlyVisibleRanges`  | Show hints only for visible ranges                                                                                                                    | false    |
 | `phpParameterHint.hintTypeName`           | Hint only name(0 - default) / Hint type and name(1) / Hint type(2)                                                                                    | 0        |
+| `phpParameterHint.showDollarSign`         | Show dollar sign in front of parameter name                                                                                                           | false    |
 
 ## Commands
 
 | Name                                   | Description                                                 | SHORTCUT                        |
 | -------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
 | `phpParameterHint.toggle`              | Hide / Show Hints                                           | Key: CTRL + K H, Mac: CMD + K H |
+| `phpParameterHint.toggleOnChange`      | Hide / Show Hints on text change                            | Key: CTRL + K O, Mac: CMD + K O |
+| `phpParameterHint.toggleOnSave`        | Hide / Show Hints on document save                          | Key: CTRL + K S, Mac: CMD + K S |
 | `phpParameterHint.toggleLiterals`      | Hide / Show Hints only for literals                         | Key: CTRL + K L, Mac: CMD + K L |
 | `phpParameterHint.toggleLine`          | Hide / Show Hints only for current line/selection           | Key: CTRL + K I, Mac: CMD + K I |
 | `phpParameterHint.toggleCollapse`      | Hide / Show Hints when variable name matches parameter name | Key: CTRL + K C, Mac: CMD + K C |
@@ -45,6 +48,7 @@ Inserts parameter hints(type, name or both) into function calls to easily unders
 | `phpParameterHint.toggleCollapseType`  | Toggle collapsing type and name when they are equal         | Key: CTRL + K Y, Mac: CMD + K Y |
 | `phpParameterHint.toggleFullType`      | Hide / Show full type name(namespaces including)            | Key: CTRL + K U, Mac: CMD + K U |
 | `phpParameterHint.toggleVisibleRanges` | Hide / Show Hints only in visible ranges                    | Key: CTRL + K R, Mac: CMD + K R |
+| `phpParameterHint.toggleDollarSign`    | Hide / Show dollar sign in front of parameter name          | Key: CTRL + K D, Mac: CMD + K D |
 
 ## Colors
 

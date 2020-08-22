@@ -1,18 +1,20 @@
 {
+  "extends": ["plugin:chai-friendly/recommended"],
   "env": {
     "browser": false,
     "commonjs": true,
     "es6": true,
-    "node": true
+    "node": true,
+    "mocha": true
   },
   "parserOptions": {
-    "ecmaVersion": 2018,
+    "ecmaVersion": 2019,
     "sourceType": "module"
   },
   "rules": {
     "no-const-assign": "warn",
     "no-this-before-super": "warn",
-    "no-undef": "warn",
+    "no-undef": "error",
     "no-unreachable": "warn",
     "no-unused-vars": "warn",
     "constructor-super": "warn",

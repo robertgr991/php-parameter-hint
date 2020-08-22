@@ -2,6 +2,7 @@
 const vscode = require('vscode');
 const { printError } = require('../printer');
 const { getDocRegex, getDefRegex } = require('./regex');
+const { isDefined } = require('../utils');
 
 const getArgs = async (editor, line, character, showTypes) => {
   let argsDef = [];
@@ -27,9 +28,30 @@ const getArgs = async (editor, line, character, showTypes) => {
             break;
           }
 
-          args = [
-            ...new Set(content.value.match(regExDoc).map(label => label.replace('`', '').trim()))
-          ];
+          const paramMatches = content.value.match(regExDoc);
+
+          if (Array.isArray(paramMatches) && paramMatches.length) {
+            args = [
+              ...new Set(
+                paramMatches
+                  .map(label => {
+                    if (!isDefined(label)) {
+                      return label;
+                    }
+
+                    if (showTypes === 'disabled' && label.split(' ').length > 1) {
+                      return label
+                        .split(' ')[1]
+                        .replace('`', '')
+                        .trim();
+                    }
+
+                    return label.replace('`', '').trim();
+                  })
+                  .filter(label => isDefined(label) && label !== '')
+              )
+            ];
+          }
 
           // If no parameters annotations found, try a regEx that takes the
           // parameters from the function definition in hover content

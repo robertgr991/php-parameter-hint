@@ -1,3 +1,5 @@
+const copy = require('fast-copy');
+
 const sameNamePlaceholder = '%';
 
 const isDefined = value => typeof value !== 'undefined';
@@ -12,8 +14,13 @@ const removeShebang = code => {
   return codeArr.join('\n');
 };
 
+const getCopyFunc = () => {
+  return process.env.NODE_ENV === 'test' ? copy : copy.default;
+};
+
 module.exports = {
   removeShebang,
   sameNamePlaceholder,
-  isDefined
+  isDefined,
+  getCopyFunc
 };

@@ -17,7 +17,8 @@ class Parser {
         php7: isPhp7
       },
       ast: {
-        withPositions: true
+        withPositions: true,
+        withSource: true
       },
       lexer: {
         short_tags: true,
@@ -33,7 +34,7 @@ class Parser {
    */
   parse(text) {
     this.functionGroups = [];
-    const astRoot = this.parser.parseEval(removeShebang(text).replace('<?php', ''));
+    const astRoot = this.parser.parseCode(removeShebang(text));
     this.crawl(astRoot);
   }
 

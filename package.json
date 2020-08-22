@@ -2,7 +2,7 @@
   "name": "php-parameter-hint",
   "displayName": "PHP Parameter Hint",
   "description": "PHP parameter hint for VS Code",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "publisher": "robertgr991",
   "engines": {
     "vscode": "^1.35.1"
@@ -28,6 +28,14 @@
       {
         "command": "phpParameterHint.toggle",
         "title": "PHP Parameter Hint: Hide / Show Hints"
+      },
+      {
+        "command": "phpParameterHint.toggleOnChange",
+        "title": "PHP Parameter Hint: Hide / Show Hints on text change"
+      },
+      {
+        "command": "phpParameterHint.toggleOnSave",
+        "title": "PHP Parameter Hint: Hide / Show Hints on document save"
       },
       {
         "command": "phpParameterHint.toggleTypeName",
@@ -56,6 +64,10 @@
       {
         "command": "phpParameterHint.toggleVisibleRanges",
         "title": "PHP Parameter Hint: Hide / Show Hints only in visible ranges"
+      },
+      {
+        "command": "phpParameterHint.toggleDollarSign",
+        "title": "PHP Parameter Hint: Hide / Show dollar sign for parameter name"
       }
     ],
     "configuration": [
@@ -125,6 +137,11 @@
           "phpParameterHint.hintOnlyVisibleRanges": {
             "type": "boolean",
             "description": "Show hints only for visibleRanges",
+            "default": false
+          },
+          "phpParameterHint.showDollarSign": {
+            "type": "boolean",
+            "description": "Show dollar sign for parameter name",
             "default": false
           },
           "phpParameterHint.php7": {
@@ -215,6 +232,16 @@
         "mac": "cmd+k h"
       },
       {
+        "command": "phpParameterHint.toggleOnChange",
+        "key": "ctrl+k o",
+        "mac": "cmd+k o"
+      },
+      {
+        "command": "phpParameterHint.toggleOnSave",
+        "key": "ctrl+k s",
+        "mac": "cmd+k s"
+      },
+      {
         "command": "phpParameterHint.toggleTypeName",
         "key": "ctrl+k t",
         "mac": "cmd+k t"
@@ -248,11 +275,18 @@
         "command": "phpParameterHint.toggleVisibleRanges",
         "key": "ctrl+k r",
         "mac": "cmd+k r"
+      },
+      {
+        "command": "phpParameterHint.toggleDollarSign",
+        "key": "ctrl+k d",
+        "mac": "cmd+k d"
       }
     ]
   },
   "scripts": {
-    "test": "nyc --reporter=html ava",
+    "test": "cross-env NODE_ENV=test mocha 'src/**/*.spec.js'",
+    "coverage": "nyc --reporter=html npm run test",
+    "test:vscode": "node test/runTest.js",
     "lint": "eslint .",
     "vscode:prepublish": "webpack --mode production",
     "webpack": "webpack --mode development",
@@ -260,10 +294,13 @@
   },
   "devDependencies": {
     "@types/node": "^12.11.7",
-    "@types/vscode": "^1.35.0",
-    "ava": "^3.11.1",
+    "@types/vscode": "^1.35.1",
+    "chai": "^4.2.0",
+    "cross-env": "^7.0.2",
     "eslint": "^7.5.0",
-    "minimist": ">=1.2.2",
+    "eslint-plugin-chai-friendly": "^0.6.0",
+    "glob": "^7.1.6",
+    "mocha": "^8.1.1",
     "nyc": "^15.1.0",
     "sinon": "^9.0.2",
     "vscode-test": "^1.3.0",

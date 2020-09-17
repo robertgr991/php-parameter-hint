@@ -2,7 +2,6 @@
 const vscode = require('vscode');
 const path = require('path');
 const { describe, it, before, after } = require('mocha');
-const sinon = require('sinon');
 const { expect } = require('chai');
 const { sleep, examplesFolderPath } = require('./utils');
 const { FunctionGroupsFacade } = require('../src/functionGroupsFacade');
@@ -112,7 +111,6 @@ describe('update', () => {
   ];
 
   before(async () => {
-    sinon.spy(update);
     const uri = vscode.Uri.file(path.join(`${examplesFolderPath}general.php`));
     const document = await vscode.workspace.openTextDocument(uri);
     editor = await vscode.window.showTextDocument(document);
@@ -123,7 +121,6 @@ describe('update', () => {
     );
   });
   after(async () => {
-    sinon.restore();
     await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
   });
 
@@ -131,19 +128,12 @@ describe('update', () => {
     const decorations = await update(editor, functionGroups);
     expect(decorations).to.deep.equal(expectedDecorations);
   });
-  it('should cancel the first call and return null when a second one is made and the first one has not finished', done => {
-    let firstDecorations;
-    let secondDecorations;
-    // simulate first update
-    setImmediate(async () => {
-      firstDecorations = await update(editor, functionGroups);
-    });
-    // simulate second update
-    setImmediate(async () => {
-      secondDecorations = await update(editor, functionGroups);
-      expect(firstDecorations).to.be.null;
-      expect(secondDecorations).to.deep.equal(expectedDecorations);
-      done();
-    });
+  it('should cancel the first call and return null when a second one is made and the first one has not finished', async () => {
+    const [firstDecorations, secondDecorations] = await Promise.all([
+      update(editor, functionGroups),
+      update(editor, functionGroups)
+    ]);
+    expect(firstDecorations).to.be.null;
+    expect(secondDecorations).to.deep.equal(expectedDecorations);
   });
 });

@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.5.1] - 17-09-2020
+
+### Changed
+
+- Stop using [js-coroutines](https://github.com/miketalbot/js-coroutines) for
+  now because it causes high CPU usage
+
 ## [0.5.0] - 22-08-2020
 
 ### Added

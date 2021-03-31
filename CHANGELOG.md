@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.5.4] - 31-03-2021
+
+### Changed
+
+- Update deps to latest
+
 ## [0.5.3] - 31-03-2021
 
 ### Changed

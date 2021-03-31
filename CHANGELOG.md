@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.5.3] - 31-03-2021
+
+### Changed
+
+- Update deps because of security vulnerabilities
+
 ## [0.5.2] - 31-03-2021
 
 ### Changed

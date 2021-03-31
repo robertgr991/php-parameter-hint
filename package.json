@@ -5,7 +5,7 @@
   "version": "0.5.2",
   "publisher": "robertgr991",
   "engines": {
-    "vscode": "^1.35.1"
+    "vscode": "^1.54.0"
   },
   "license": "MIT",
   "repository": {

@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.5.2] - 31-03-2021
+
+### Changed
+
+- Update deps
+
 ## [0.5.1] - 17-09-2020
 
 ### Changed
